@@ -40,20 +40,19 @@ class SimulationWindow(arcade.Window):
         """ Logika aktualizacji. """
         self.model.step()
         
-        # Usuń sprajty dla usuniętych agentów
         current_agent_ids = {agent.unique_id for agent in self.model.schedule.agents}
         sprites_to_remove = [sprite for sprite in self.agent_sprites if sprite.agent.unique_id not in current_agent_ids]
         for sprite in sprites_to_remove:
             sprite.remove_from_sprite_lists()
             del self.sprite_map[sprite.agent.unique_id]
         
-        # Zaktualizuj pozycje istniejących sprajtów
         for agent in self.model.schedule.agents:
             sprite = self.sprite_map.get(agent.unique_id)
             if sprite:
-                target_x = (agent.pos[0] + 0.5) * self.tile_size
-                target_y = (self.model.height - agent.pos[1] - 0.5) * self.tile_size
+                # Używamy funkcji pomocniczej z agenta, która zawsze zwraca krotkę
+                agent_pos_tuple = agent.get_pos_tuple()
+                target_x = (agent_pos_tuple[0] + 0.5) * self.tile_size
+                target_y = (self.model.height - agent_pos_tuple[1] - 0.5) * self.tile_size
                 
-                # Płynne przejście do nowej pozycji
                 sprite.center_x += (target_x - sprite.center_x) * 0.2
                 sprite.center_y += (target_y - sprite.center_y) * 0.2

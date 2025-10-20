@@ -1,96 +1,119 @@
+# Plik: simulation/agent.py (WERSJA FINALNA 2.0 - Odporna na typy)
+
 import mesa
-from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 import random
 
 class MilitaryAgent(mesa.Agent):
-    """ Agent reprezentujący oddział wojskowy. """
-    def __init__(self, unique_id, model, faction, unit_type, hp, morale):
+    def __init__(self, unique_id, model, faction, unit_type):
         super().__init__(unique_id, model)
         self.faction = faction
         self.unit_type = unit_type
-        self.hp = hp
-        self.max_hp = hp
-        self.morale = morale
-        self.max_morale = morale
-        self.state = "IDLE"  # Stany: IDLE, MOVING, ATTACKING, FLEEING
         
-        # Atrybuty bojowe na podstawie typu jednostki
-        self.attack_range = self.model.unit_params[unit_type]["range"]
-        self.damage = self.model.unit_params[unit_type]["damage"]
-        self.speed = self.model.unit_params[unit_type]["speed"]
-        
-        self.target_pos = None
+        params = self.model.unit_params[self.unit_type]
+        self.hp = params["hp"]
+        self.max_hp = params["hp"]
+        self.morale = params["morale"]
+        self.max_morale = params["morale"]
+        self.attack_range = params["range"]
+        self.damage = params["damage"]
+        self.speed = params["speed"]
+
+        self.state = "IDLE"
         self.path = []
+        self.target_pos_tuple = None
+
+        if self.faction == "Armia Koronna":
+            self.strategic_target = (self.model.grid.width // 2, 5)
+        else:
+            self.strategic_target = (self.model.grid.width // 2, self.model.grid.height - 5)
+
+    def get_pos_tuple(self):
+        """ NOWA FUNKCJA POMOCNICZA: Zawsze zwraca pozycję jako krotkę (x, y). """
+        if isinstance(self.pos, tuple):
+            return self.pos
+        else:
+            # Zakładamy, że to GridNode lub podobny obiekt z atrybutami .x i .y
+            return (self.pos.x, self.pos.y)
 
     def find_enemy(self):
-        """ Znajduje najbliższego wroga w zasięgu widzenia. """
-        neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False, radius=self.attack_range + 5)
+        # Mesa.grid.get_neighbors poprawnie obsługuje różne typy pozycji
+        neighbors = self.model.grid.get_neighbors(self.pos, moore=True, include_center=False, radius=15)
         enemies = [agent for agent in neighbors if isinstance(agent, MilitaryAgent) and agent.faction != self.faction]
         if enemies:
             return min(enemies, key=lambda e: self.distance_to(e))
         return None
 
     def distance_to(self, other_agent):
-        return max(abs(self.pos[0] - other_agent.pos[0]), abs(self.pos[1] - other_agent.pos[1]))
+        pos1 = self.get_pos_tuple()
+        pos2 = other_agent.get_pos_tuple()
+        return max(abs(pos1[0] - pos2[0]), abs(pos1[1] - pos2[1]))
 
     def move(self):
         if not self.path:
             return
 
-        next_pos = self.path.pop(0)
-        if self.model.grid.is_cell_empty(next_pos):
-             self.model.grid.move_agent(self, next_pos)
+        next_pos_node = self.path.pop(0)
+        next_pos_tuple = (next_pos_node.x, next_pos_node.y)
 
-    def calculate_path(self, target_pos):
+        if not self.model.grid.out_of_bounds(next_pos_tuple) and self.model.grid.is_cell_empty(next_pos_tuple):
+             self.model.grid.move_agent(self, next_pos_tuple)
+        else:
+             self.path = []
+
+    def calculate_path(self, target_pos_tuple):
+        if not isinstance(target_pos_tuple, tuple):
+             target_pos_tuple = (target_pos_tuple.x, target_pos_tuple.y)
+
+        current_pos = self.get_pos_tuple()
         finder = AStarFinder()
-        start_node = self.model.path_grid.node(self.pos[0], self.pos[1])
-        end_node = self.model.path_grid.node(target_pos[0], target_pos[1])
+        start_node = self.model.path_grid.node(current_pos[0], current_pos[1])
+        end_node = self.model.path_grid.node(target_pos_tuple[0], target_pos_tuple[1])
+        
+        if not end_node.walkable:
+            self.path = []
+            return
+
         path, _ = finder.find_path(start_node, end_node, self.model.path_grid)
         self.model.path_grid.cleanup()
-        self.path = path[1:] # Pomiń pozycję startową
-        
+        self.path = path[1:] if path else []
+
     def step(self):
-        """ Logika agenta wykonywana w każdym kroku symulacji (FSM). """
         if self.hp <= 0:
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
             return
 
-        # 1. Sprawdź morale i zdecyduj o ucieczce
+        current_pos = self.get_pos_tuple()
+
         if self.morale < 25 and self.state != "FLEEING":
             self.state = "FLEEING"
-            # Uciekaj w kierunku przeciwnym do średniej pozycji wrogów lub do bazy
-            safe_pos = (self.pos[0], 0) if self.faction == "Kozacy/Tatarzy" else (self.pos[0], self.model.grid.height - 1)
+            safe_pos = (current_pos[0], 0) if self.faction == "Kozacy/Tatarzy" else (current_pos[0], self.model.grid.height - 1)
             self.calculate_path(safe_pos)
-
+        
         if self.state == "FLEEING":
-            if self.path:
-                self.move()
-            else:
-                self.state = "IDLE" # Dotarł do bezpiecznego miejsca
+            if self.path: self.move()
             return
 
-        # 2. Znajdź wroga
         enemy = self.find_enemy()
 
         if enemy:
             distance = self.distance_to(enemy)
-            # 3. Jeśli wróg jest w zasięgu - atakuj
             if distance <= self.attack_range:
                 self.state = "ATTACKING"
-                # Symulacja ataku (prosta - szansa na trafienie)
-                if random.random() < 0.5: # Uproszczona szansa na trafienie
+                self.path = []
+                if self.random.random() < 0.6:
                     enemy.hp -= self.damage
-                    enemy.morale -= self.damage * 2
-            # 4. Jeśli wróg jest poza zasięgiem - ruszaj w jego stronę
+                    enemy.morale -= self.damage * 1.5
             else:
                 self.state = "MOVING"
-                if not self.path or self.target_pos != enemy.pos:
-                    self.target_pos = enemy.pos
-                    self.calculate_path(enemy.pos)
-                if self.path:
-                    self.move()
+                enemy_pos_tuple = enemy.get_pos_tuple()
+                if not self.path or self.target_pos_tuple != enemy_pos_tuple:
+                    self.target_pos_tuple = enemy_pos_tuple
+                    self.calculate_path(enemy_pos_tuple)
+                if self.path: self.move()
         else:
-            self.state = "IDLE"
-            self.path = []
+            self.state = "MOVING"
+            if not self.path or len(self.path) < 5: # Szukaj nowej ścieżki, jeśli stara się kończy
+                self.calculate_path(self.strategic_target)
+            if self.path: self.move()

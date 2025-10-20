@@ -11,7 +11,7 @@ class BattleOfZborowModel(mesa.Model):
         self.schedule = mesa.time.RandomActivation(self)
         
         # Wczytaj mapę i jej właściwości
-        self.map_data = pytmx.load_pygame(map_file_path, pixelalpha=True)
+        self.map_data = pytmx.TiledMap(map_file_path)
         self.width = self.map_data.width
         self.height = self.map_data.height
         
@@ -71,20 +71,33 @@ class BattleOfZborowModel(mesa.Model):
 
 
     def setup_agents(self):
-        """ Tworzy i rozmieszcza agentów na mapie. """
-        # Armia Koronna (na dole mapy)
+        """ Tworzy i rozmieszcza agentów na mapie w zorganizowanych strefach. """
+        
+        # Armia Koronna (na dole mapy) - 5x Piechota, 3x Jazda
         for i in range(5):
-            x = self.random.randrange(self.width)
-            y = self.random.randrange(self.height - 10, self.height)
-            agent = MilitaryAgent(self.next_id(), self, "Armia Koronna", "Piechota", 100, 100)
+            x = self.random.randrange(10, self.width - 10)
+            y = self.random.randrange(self.height - 10, self.height - 1)
+            agent = MilitaryAgent(self.next_id(), self, "Armia Koronna", "Piechota")
+            self.grid.place_agent(agent, (x, y))
+            self.schedule.add(agent)
+        for i in range(3):
+            x = self.random.randrange(5, self.width - 5)
+            y = self.random.randrange(self.height - 15, self.height - 5)
+            agent = MilitaryAgent(self.next_id(), self, "Armia Koronna", "Jazda")
             self.grid.place_agent(agent, (x, y))
             self.schedule.add(agent)
 
-        # Kozacy i Tatarzy (na górze mapy)
+        # Kozacy i Tatarzy (na górze mapy) - 5x Piechota Kozacka, 5x Jazda Tatarska
         for i in range(5):
-            x = self.random.randrange(self.width)
-            y = self.random.randrange(0, 10)
-            agent = MilitaryAgent(self.next_id(), self, "Kozacy/Tatarzy", "Jazda Tatarska", 80, 90)
+            x = self.random.randrange(10, self.width - 10)
+            y = self.random.randrange(1, 10)
+            agent = MilitaryAgent(self.next_id(), self, "Kozacy/Tatarzy", "Piechota Kozacka")
+            self.grid.place_agent(agent, (x, y))
+            self.schedule.add(agent)
+        for i in range(5):
+            x = self.random.randrange(5, self.width - 5)
+            y = self.random.randrange(1, 15)
+            agent = MilitaryAgent(self.next_id(), self, "Kozacy/Tatarzy", "Jazda Tatarska")
             self.grid.place_agent(agent, (x, y))
             self.schedule.add(agent)
 

@@ -15,14 +15,49 @@ class AgentSprite(arcade.Sprite):
 
     def draw_health_bar(self):
         """ Rysuje pasek zdrowia i morale nad sprajtem. """
-        # Pasek zdrowia (zielony)
-        health_width = 20 * (self.agent.hp / self.agent.max_hp)
-        arcade.draw_rectangle_filled(self.center_x, self.center_y + 12, 20, 4, arcade.color.RED)
-        if health_width > 0:
-            arcade.draw_rectangle_filled(self.center_x - (20 - health_width) / 2, self.center_y + 12, health_width, 4, arcade.color.GREEN)
+        BAR_WIDTH = 24
+        BAR_HEIGHT = 4
 
-        # Pasek morale (niebieski)
-        morale_width = 20 * (self.agent.morale / self.agent.max_morale)
-        arcade.draw_rectangle_filled(self.center_x, self.center_y + 18, 20, 4, arcade.color.DARK_GRAY)
-        if morale_width > 0:
-            arcade.draw_rectangle_filled(self.center_x - (20 - morale_width) / 2, self.center_y + 18, morale_width, 4, arcade.color.CYAN)
+        # --- Pasek zdrowia (na dole) ---
+        health_y = self.center_y + 14
+        health_width_current = BAR_WIDTH * (self.agent.hp / self.agent.max_hp)
+        
+        # Tło paska (czerwone)
+        arcade.draw_lrbt_rectangle_filled(
+            left=self.center_x - BAR_WIDTH / 2,
+            right=self.center_x + BAR_WIDTH / 2,
+            top=health_y + BAR_HEIGHT / 2,
+            bottom=health_y - BAR_HEIGHT / 2,
+            color=arcade.color.RED
+        )
+        # Wypełnienie paska (zielone)
+        if health_width_current > 0:
+            arcade.draw_lrbt_rectangle_filled(
+                left=self.center_x - BAR_WIDTH / 2,
+                right=self.center_x - BAR_WIDTH / 2 + health_width_current,
+                top=health_y + BAR_HEIGHT / 2,
+                bottom=health_y - BAR_HEIGHT / 2,
+                color=arcade.color.GREEN
+            )
+
+        # --- Pasek morale (na górze) ---
+        morale_y = self.center_y + 20
+        morale_width_current = BAR_WIDTH * (self.agent.morale / self.agent.max_morale)
+        
+        # Tło paska (ciemnoszare)
+        arcade.draw_lrbt_rectangle_filled(
+            left=self.center_x - BAR_WIDTH / 2,
+            right=self.center_x + BAR_WIDTH / 2,
+            top=morale_y + BAR_HEIGHT / 2,
+            bottom=morale_y - BAR_HEIGHT / 2,
+            color=arcade.color.DARK_GRAY
+        )
+        # Wypełnienie paska (niebieskie)
+        if morale_width_current > 0:
+            arcade.draw_lrbt_rectangle_filled(
+                left=self.center_x - BAR_WIDTH / 2,
+                right=self.center_x - BAR_WIDTH / 2 + morale_width_current,
+                top=morale_y + BAR_HEIGHT / 2,
+                bottom=morale_y - BAR_HEIGHT / 2,
+                color=arcade.color.CYAN
+            )
