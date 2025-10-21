@@ -143,3 +143,34 @@ class BattleOfZborowModel(mesa.Model):
     def step(self):
         """ Wykonuje jeden krok symulacji. """
         self.schedule.step()
+        # Po kroku usuń martwe jednostki (double-check)
+        self.cleanup_dead_agents()
+    
+    def cleanup_dead_agents(self):
+        """ Usuwa jednostki z hp <= 0 z siatki i schedulera. """
+        dead_agents = [agent for agent in self.schedule.agents 
+                      if isinstance(agent, MilitaryAgent) and agent.hp <= 0]
+        for agent in dead_agents:
+            if agent.pos:  # Jeśli agent jest na siatce
+                self.grid.remove_agent(agent)
+            if agent in self.schedule.agents:
+                self.schedule.remove(agent)
+    
+    def get_battle_status(self):
+        """ Sprawdza status bitwy i zwraca zwycięzcę jeśli jest. """
+        # Najpierw wyczyść martwe jednostki
+        self.cleanup_dead_agents()
+        
+        crown_count = sum(1 for agent in self.schedule.agents 
+                         if isinstance(agent, MilitaryAgent) and agent.faction == "Armia Koronna" and agent.hp > 0)
+        cossack_count = sum(1 for agent in self.schedule.agents 
+                           if isinstance(agent, MilitaryAgent) and agent.faction == "Kozacy/Tatarzy" and agent.hp > 0)
+        
+        if crown_count == 0 and cossack_count > 0:
+            return {"status": "finished", "winner": "Kozacy/Tatarzy", "survivors": cossack_count}
+        elif cossack_count == 0 and crown_count > 0:
+            return {"status": "finished", "winner": "Armia Koronna", "survivors": crown_count}
+        elif crown_count == 0 and cossack_count == 0:
+            return {"status": "finished", "winner": "Remis", "survivors": 0}
+        else:
+            return {"status": "ongoing", "crown_count": crown_count, "cossack_count": cossack_count}

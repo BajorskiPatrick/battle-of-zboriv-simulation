@@ -130,9 +130,13 @@ def simulation_step():
             print(f"Executing step... Agents: {len(simulation.schedule.agents)}")
             simulation.step()
         
-        # Zbierz informacje o aktualnym stanie
+        # Zbierz informacje o aktualnym stanie (TYLKO ŻYWI AGENCI)
         agents_data = []
         for agent in simulation.schedule.agents:
+            # Pomiń agentów z hp <= 0 (nie powinni już być renderowani)
+            if agent.hp <= 0:
+                continue
+                
             pos = agent.get_pos_tuple()
             agents_data.append({
                 "id": agent.unique_id,
@@ -149,14 +153,18 @@ def simulation_step():
             })
         
         stats = {
-            "crown_count": len([a for a in simulation.schedule.agents if a.faction == "Armia Koronna"]),
-            "cossack_count": len([a for a in simulation.schedule.agents if a.faction == "Kozacy/Tatarzy"]),
-            "total_agents": len(simulation.schedule.agents)
+            "crown_count": len([a for a in simulation.schedule.agents if a.faction == "Armia Koronna" and a.hp > 0]),
+            "cossack_count": len([a for a in simulation.schedule.agents if a.faction == "Kozacy/Tatarzy" and a.hp > 0]),
+            "total_agents": len([a for a in simulation.schedule.agents if a.hp > 0])
         }
+        
+        # Sprawdź status bitwy
+        battle_status = simulation.get_battle_status()
         
         return jsonify({
             "agents": agents_data,
             "stats": stats,
+            "battle_status": battle_status,
             "running": simulation_running,
             "map_width": simulation.width,
             "map_height": simulation.height

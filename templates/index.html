@@ -337,6 +337,88 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Modal zwycięstwa */
+        .victory-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .victory-modal.active {
+            display: flex;
+        }
+        
+        .victory-content {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: 5px solid gold;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            animation: victoryAppear 0.5s ease-out;
+        }
+        
+        @keyframes victoryAppear {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .victory-title {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+        }
+        
+        .victory-winner {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        .victory-crown { color: #ff6b6b; }
+        .victory-cossack { color: #4dabf7; }
+        .victory-draw { color: #ffd700; }
+        
+        .victory-stats {
+            font-size: 1.3em;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .victory-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .victory-button:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -663,15 +745,72 @@
                 document.getElementById('cossackCount').textContent = data.stats.cossack_count;
                 document.getElementById('totalCount').textContent = data.stats.total_agents;
                 
-                // Sprawdź czy symulacja się zakończyła
-                if (data.stats.crown_count === 0 || data.stats.cossack_count === 0) {
+                // Sprawdź status bitwy
+                if (data.battle_status && data.battle_status.status === 'finished') {
                     stopSimulation();
-                    const winner = data.stats.crown_count > 0 ? 'Armia Koronna' : 'Kozacy i Tatarzy';
-                    updateStatus('stopped', `🏆 Zwycięstwo: ${winner}!`);
+                    showVictoryModal(data.battle_status);
                 }
             } catch (error) {
                 console.error('Błąd aktualizacji symulacji:', error);
             }
+        }
+        
+        // Pokaż modal zwycięstwa
+        function showVictoryModal(battleStatus) {
+            const modal = document.getElementById('victoryModal');
+            const winnerEl = document.getElementById('victoryWinner');
+            const statsEl = document.getElementById('victoryStats');
+            
+            // Określ kolorystykę i emotikony
+            let winnerClass = '';
+            let emoji = '';
+            let winnerText = '';
+            
+            if (battleStatus.winner === 'Armia Koronna') {
+                winnerClass = 'victory-crown';
+                emoji = '🇵🇱';
+                winnerText = `${emoji} ARMIA KORONNA ZWYCIĘŻA! ${emoji}`;
+            } else if (battleStatus.winner === 'Kozacy/Tatarzy') {
+                winnerClass = 'victory-cossack';
+                emoji = '⚔️';
+                winnerText = `${emoji} KOZACY I TATARZY ZWYCIĘŻAJĄ! ${emoji}`;
+            } else {
+                winnerClass = 'victory-draw';
+                emoji = '🤝';
+                winnerText = `${emoji} REMIS - OBE STRONY WYCZERPANE ${emoji}`;
+            }
+            
+            winnerEl.className = `victory-winner ${winnerClass}`;
+            winnerEl.textContent = winnerText;
+            
+            // Statystyki
+            if (battleStatus.winner !== 'Remis') {
+                statsEl.innerHTML = `
+                    <div>💪 Pozostało jednostek: <strong>${battleStatus.survivors}</strong></div>
+                    <div>⚔️ Wróg całkowicie rozgromiony!</div>
+                `;
+            } else {
+                statsEl.innerHTML = `
+                    <div>💀 Obie armie poniosły straszliwe straty</div>
+                    <div>⚔️ Nikt nie wyszedł zwycięsko z tej bitwy</div>
+                `;
+            }
+            
+            modal.classList.add('active');
+            updateStatus('stopped', '🏆 Bitwa zakończona');
+        }
+        
+        // Zamknij modal zwycięstwa
+        function closeVictoryModal() {
+            const modal = document.getElementById('victoryModal');
+            modal.classList.remove('active');
+        }
+        
+        // Restart symulacji
+        function restartSimulation() {
+            closeVictoryModal();
+            // Powrót do konfiguracji
+            window.location.reload();
         }
         
         // Renderuj symulację na canvas
@@ -854,5 +993,16 @@
         // Inicjalizacja
         loadUnitTypes();
     </script>
+    
+    <!-- Modal zwycięstwa -->
+    <div id="victoryModal" class="victory-modal">
+        <div class="victory-content">
+            <div class="victory-title">🏆 KONIEC BITWY 🏆</div>
+            <div id="victoryWinner" class="victory-winner"></div>
+            <div id="victoryStats" class="victory-stats"></div>
+            <button class="victory-button" onclick="restartSimulation()">🔄 Nowa Bitwa</button>
+            <button class="victory-button" onclick="closeVictoryModal()">📊 Zobacz Pole Bitwy</button>
+        </div>
+    </div>
 </body>
 </html>
