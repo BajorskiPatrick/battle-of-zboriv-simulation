@@ -4,3 +4,6 @@ pytmx
 numpy
 pathfinding
 pygame
+flask
+flask-cors
+pillow

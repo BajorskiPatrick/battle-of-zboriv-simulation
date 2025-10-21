@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symulacja Bitwy pod Zborowem (1649)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            color: #ddd;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr 300px;
+            gap: 20px;
+            align-items: start;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .panel h2 {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Konfiguracja jednostek */
+        .faction-section {
+            margin-bottom: 25px;
+        }
+        
+        .faction-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .crown-faction {
+            border-left: 4px solid #c41e3a;
+        }
+        
+        .cossack-faction {
+            border-left: 4px solid #005bbb;
+        }
+        
+        .unit-config {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        
+        .unit-config img {
+            width: 32px;
+            height: 32px;
+            margin-right: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+        
+        .unit-name {
+            flex: 1;
+            font-size: 0.9em;
+        }
+        
+        .unit-count {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .unit-count button {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.2s;
+        }
+        
+        .unit-count button:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+        
+        .unit-count input {
+            width: 50px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        /* Przyciski kontrolne */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Obszar symulacji */
+        .simulation-area {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 600px;
+        }
+        
+        #simulationCanvas {
+            width: 100%;
+            border-radius: 5px;
+            display: block;
+            background: #2d5016;
+        }
+        
+        .simulation-status {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status-idle { color: #888; }
+        .status-running { color: #4ade80; }
+        .status-stopped { color: #f87171; }
+        
+        /* Legenda */
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+        
+        .legend-item:hover {
+            background: rgba(0, 0, 0, 0.4);
+            transform: translateX(5px);
+        }
+        
+        .legend-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+        }
+        
+        .legend-info {
+            flex: 1;
+        }
+        
+        .legend-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .legend-faction {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .legend-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3px;
+            font-size: 0.75em;
+            color: #ccc;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .stat-label {
+            color: #888;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        /* Statystyki bitwy */
+        .battle-stats {
+            margin-top: 20px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label-main {
+            font-weight: bold;
+        }
+        
+        .stat-value-main {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .crown-color { color: #ff6b6b; }
+        .cossack-color { color: #4dabf7; }
+        
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .legend-panel {
+                grid-column: 1;
+                grid-row: 3;
+            }
+        }
+        
+        /* Loader */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        .loader.active {
+            display: block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Modal zwycięstwa */
+        .victory-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .victory-modal.active {
+            display: flex;
+        }
+        
+        .victory-content {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: 5px solid gold;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            animation: victoryAppear 0.5s ease-out;
+        }
+        
+        @keyframes victoryAppear {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .victory-title {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+        }
+        
+        .victory-winner {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        .victory-crown { color: #ff6b6b; }
+        .victory-cossack { color: #4dabf7; }
+        .victory-draw { color: #ffd700; }
+        
+        .victory-stats {
+            font-size: 1.3em;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .victory-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .victory-button:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ Symulacja Bitwy pod Zborowem (1649) ⚔️</h1>
+            <p class="subtitle">Interaktywna symulacja agentowa historycznej bitwy</p>
+        </header>
+        
+        <div class="main-grid">
+            <!-- Panel konfiguracji -->
+            <div class="panel config-panel">
+                <h2>⚙️ Konfiguracja Jednostek</h2>
+                
+                <div class="faction-section">
+                    <div class="faction-header crown-faction">
+                        🛡️ Armia Koronna
+                    </div>
+                    <div id="crownUnits"></div>
+                </div>
+                
+                <div class="faction-section">
+                    <div class="faction-header cossack-faction">
+                        🏹 Kozacy i Tatarzy
+                    </div>
+                    <div id="cossackUnits"></div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-start" id="startBtn" onclick="startSimulation()">
+                        🚀 Rozpocznij Symulację
+                    </button>
+                    <button class="btn btn-stop" id="stopBtn" onclick="stopSimulation()" disabled>
+                        ⏹️ Zatrzymaj Symulację
+                    </button>
+                </div>
+                
+                <div class="loader" id="loader"></div>
+            </div>
+            
+            <!-- Obszar symulacji -->
+            <div class="panel simulation-area">
+                <div class="simulation-status status-idle" id="status">
+                    ⏸️ Gotowa do startu
+                </div>
+                <canvas id="simulationCanvas"></canvas>
+            </div>
+            
+            <!-- Panel legendy -->
+            <div class="panel legend-panel">
+                <h2>📋 Legenda Jednostek</h2>
+                <div id="legendContainer"></div>
+                
+                <div class="battle-stats" id="battleStats" style="display: none;">
+                    <h3 style="margin-bottom: 10px;">📊 Statystyki Bitwy</h3>
+                    <div class="stat-row">
+                        <span class="stat-label-main crown-color">Armia Koronna:</span>
+                        <span class="stat-value-main crown-color" id="crownCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label-main cossack-color">Kozacy/Tatarzy:</span>
+                        <span class="stat-value-main cossack-color" id="cossackCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label-main">Łącznie jednostek:</span>
+                        <span class="stat-value-main" id="totalCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let unitTypes = {};
+        let unitCounts = {};
+        let simulationInterval = null;
+        let canvas = document.getElementById('simulationCanvas');
+        let ctx = canvas.getContext('2d');
+        
+        // Cache dla załadowanych obrazków sprite'ów
+        let spriteCache = {};
+        
+        // Dane mapy z Tiled
+        let mapData = null;
+        let tilesetImage = null;
+        
+        // Funkcja do ładowania sprite'a
+        function loadSprite(spritePath) {
+            return new Promise((resolve, reject) => {
+                if (spriteCache[spritePath]) {
+                    resolve(spriteCache[spritePath]);
+                    return;
+                }
+                
+                const img = new Image();
+                img.onload = () => {
+                    spriteCache[spritePath] = img;
+                    resolve(img);
+                };
+                img.onerror = () => {
+                    console.warn(`Failed to load sprite: ${spritePath}`);
+                    resolve(null);
+                };
+                img.src = `/${spritePath}`;
+            });
+        }
+        
+        // Preload wszystkich sprite'ów przy starcie
+        async function preloadSprites() {
+            const promises = Object.values(unitTypes).map(unit => loadSprite(unit.sprite_path));
+            await Promise.all(promises);
+            console.log('Sprites preloaded:', Object.keys(spriteCache).length);
+        }
+        
+        // Załaduj dane mapy z Tiled
+        async function loadMapData() {
+            try {
+                const response = await fetch('/api/map-data');
+                mapData = await response.json();
+                console.log('Map data loaded:', mapData.width, 'x', mapData.height);
+                
+                // Załaduj tileset image
+                tilesetImage = new Image();
+                tilesetImage.onload = () => {
+                    console.log('Tileset image loaded');
+                };
+                tilesetImage.onerror = () => {
+                    console.error('Failed to load tileset image');
+                };
+                tilesetImage.src = `/${mapData.tileset_image}`;
+            } catch (error) {
+                console.error('Błąd ładowania mapy:', error);
+            }
+        }
+        
+        // Załaduj dostępne typy jednostek
+        async function loadUnitTypes() {
+            try {
+                const response = await fetch('/api/unit-types');
+                unitTypes = await response.json();
+                
+                // Inicjalizuj liczniki
+                for (const unitName in unitTypes) {
+                    unitCounts[unitName] = 0;
+                }
+                
+                renderUnitConfigs();
+                renderLegend();
+                
+                // Preload sprite'ów i mapy
+                await preloadSprites();
+                await loadMapData();
+            } catch (error) {
+                console.error('Błąd ładowania typów jednostek:', error);
+            }
+        }
+        
+        // Renderuj kontrolki konfiguracji jednostek
+        function renderUnitConfigs() {
+            const crownContainer = document.getElementById('crownUnits');
+            const cossackContainer = document.getElementById('cossackUnits');
+            
+            crownContainer.innerHTML = '';
+            cossackContainer.innerHTML = '';
+            
+            for (const [unitName, unitData] of Object.entries(unitTypes)) {
+                const unitDiv = document.createElement('div');
+                unitDiv.className = 'unit-config';
+                
+                unitDiv.innerHTML = `
+                    <img src="/${unitData.sprite_path}" alt="${unitName}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22><rect width=%2232%22 height=%2232%22 fill=%22%23666%22/></svg>'">
+                    <span class="unit-name">${unitName}</span>
+                    <div class="unit-count">
+                        <button onclick="changeUnitCount('${unitName}', -1)">-</button>
+                        <input type="number" id="count-${unitName}" value="0" min="0" max="20" 
+                               onchange="updateUnitCount('${unitName}', this.value)">
+                        <button onclick="changeUnitCount('${unitName}', 1)">+</button>
+                    </div>
+                `;
+                
+                if (unitData.faction === 'Armia Koronna') {
+                    crownContainer.appendChild(unitDiv);
+                } else {
+                    cossackContainer.appendChild(unitDiv);
+                }
+            }
+        }
+        
+        // Renderuj legendę
+        function renderLegend() {
+            const container = document.getElementById('legendContainer');
+            container.innerHTML = '';
+            
+            for (const [unitName, unitData] of Object.entries(unitTypes)) {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                
+                const factionClass = unitData.faction === 'Armia Koronna' ? 'crown-color' : 'cossack-color';
+                
+                legendItem.innerHTML = `
+                    <img src="/${unitData.sprite_path}" alt="${unitName}" class="legend-icon" 
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23666%22/></svg>'">
+                    <div class="legend-info">
+                        <div class="legend-name">${unitName}</div>
+                        <div class="legend-faction ${factionClass}">${unitData.faction}</div>
+                        <div class="legend-stats">
+                            <div class="stat">
+                                <span class="stat-label">HP:</span>
+                                <span class="stat-value">${unitData.hp}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Morale:</span>
+                                <span class="stat-value">${unitData.morale}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Zasięg:</span>
+                                <span class="stat-value">${unitData.range}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Atak:</span>
+                                <span class="stat-value">${unitData.damage}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(legendItem);
+            }
+        }
+        
+        // Zmień liczbę jednostek
+        function changeUnitCount(unitName, delta) {
+            const input = document.getElementById(`count-${unitName}`);
+            let newValue = parseInt(input.value) + delta;
+            newValue = Math.max(0, Math.min(20, newValue));
+            input.value = newValue;
+            unitCounts[unitName] = newValue;
+        }
+        
+        // Aktualizuj liczbę jednostek
+        function updateUnitCount(unitName, value) {
+            unitCounts[unitName] = Math.max(0, Math.min(20, parseInt(value) || 0));
+        }
+        
+        // Rozpocznij symulację
+        async function startSimulation() {
+            // Zbierz konfigurację
+            const config = {};
+            for (const unitName in unitCounts) {
+                if (unitCounts[unitName] > 0) {
+                    config[unitName] = unitCounts[unitName];
+                }
+            }
+            
+            if (Object.keys(config).length === 0) {
+                alert('Dodaj przynajmniej jedną jednostkę!');
+                return;
+            }
+            
+            console.log('Starting simulation with config:', config);
+            
+            document.getElementById('loader').classList.add('active');
+            document.getElementById('startBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/start-simulation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                console.log('Start response:', response.status);
+                const result = await response.json();
+                console.log('Start result:', result);
+                
+                if (response.ok) {
+                    updateStatus('running', '▶️ Symulacja w toku');
+                    document.getElementById('stopBtn').disabled = false;
+                    document.getElementById('battleStats').style.display = 'block';
+                    
+                    // Rozpocznij odświeżanie
+                    simulationInterval = setInterval(updateSimulation, 200);
+                    console.log('Simulation interval started');
+                }
+            } catch (error) {
+                console.error('Błąd rozpoczynania symulacji:', error);
+                alert('Nie udało się rozpocząć symulacji');
+            } finally {
+                document.getElementById('loader').classList.remove('active');
+            }
+        }
+        
+        // Zatrzymaj symulację
+        async function stopSimulation() {
+            try {
+                await fetch('/api/stop-simulation', { method: 'POST' });
+                
+                if (simulationInterval) {
+                    clearInterval(simulationInterval);
+                    simulationInterval = null;
+                }
+                
+                updateStatus('stopped', '⏹️ Symulacja zatrzymana');
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+            } catch (error) {
+                console.error('Błąd zatrzymywania symulacji:', error);
+            }
+        }
+        
+        // Aktualizuj stan symulacji
+        async function updateSimulation() {
+            try {
+                const response = await fetch('/api/simulation-step');
+                const data = await response.json();
+                
+                console.log('Simulation step:', data.stats);
+                
+                // Aktualizuj canvas
+                renderSimulation(data);
+                
+                // Aktualizuj statystyki
+                document.getElementById('crownCount').textContent = data.stats.crown_count;
+                document.getElementById('cossackCount').textContent = data.stats.cossack_count;
+                document.getElementById('totalCount').textContent = data.stats.total_agents;
+                
+                // Sprawdź status bitwy
+                if (data.battle_status && data.battle_status.status === 'finished') {
+                    stopSimulation();
+                    showVictoryModal(data.battle_status);
+                }
+            } catch (error) {
+                console.error('Błąd aktualizacji symulacji:', error);
+            }
+        }
+        
+        // Pokaż modal zwycięstwa
+        function showVictoryModal(battleStatus) {
+            const modal = document.getElementById('victoryModal');
+            const winnerEl = document.getElementById('victoryWinner');
+            const statsEl = document.getElementById('victoryStats');
+            
+            // Określ kolorystykę i emotikony
+            let winnerClass = '';
+            let emoji = '';
+            let winnerText = '';
+            
+            if (battleStatus.winner === 'Armia Koronna') {
+                winnerClass = 'victory-crown';
+                emoji = '🇵🇱';
+                winnerText = `${emoji} ARMIA KORONNA ZWYCIĘŻA! ${emoji}`;
+            } else if (battleStatus.winner === 'Kozacy/Tatarzy') {
+                winnerClass = 'victory-cossack';
+                emoji = '⚔️';
+                winnerText = `${emoji} KOZACY I TATARZY ZWYCIĘŻAJĄ! ${emoji}`;
+            } else {
+                winnerClass = 'victory-draw';
+                emoji = '🤝';
+                winnerText = `${emoji} REMIS - OBE STRONY WYCZERPANE ${emoji}`;
+            }
+            
+            winnerEl.className = `victory-winner ${winnerClass}`;
+            winnerEl.textContent = winnerText;
+            
+            // Statystyki
+            if (battleStatus.winner !== 'Remis') {
+                statsEl.innerHTML = `
+                    <div>💪 Pozostało jednostek: <strong>${battleStatus.survivors}</strong></div>
+                    <div>⚔️ Wróg całkowicie rozgromiony!</div>
+                `;
+            } else {
+                statsEl.innerHTML = `
+                    <div>💀 Obie armie poniosły straszliwe straty</div>
+                    <div>⚔️ Nikt nie wyszedł zwycięsko z tej bitwy</div>
+                `;
+            }
+            
+            modal.classList.add('active');
+            updateStatus('stopped', '🏆 Bitwa zakończona');
+        }
+        
+        // Zamknij modal zwycięstwa
+        function closeVictoryModal() {
+            const modal = document.getElementById('victoryModal');
+            modal.classList.remove('active');
+        }
+        
+        // Restart symulacji
+        function restartSimulation() {
+            closeVictoryModal();
+            // Powrót do konfiguracji
+            window.location.reload();
+        }
+        
+        // Renderuj symulację na canvas
+        function renderSimulation(data) {
+            const tileSize = 16;
+            const scale = 2;
+            
+            // Ustaw rozmiar canvas
+            canvas.width = data.map_width * tileSize * scale;
+            canvas.height = data.map_height * tileSize * scale;
+            
+            // Wyczyść canvas - tło pola bitwy
+            ctx.fillStyle = '#2d5016';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Rysuj mapę z Tiled jeśli jest załadowana
+            if (mapData && tilesetImage && tilesetImage.complete) {
+                const tilesPerRow = 12; // Z tileset.tsx: columns="12"
+                
+                for (let y = 0; y < mapData.height; y++) {
+                    for (let x = 0; x < mapData.width; x++) {
+                        const gid = mapData.tiles[y][x];
+                        if (gid === 0) continue; // Pusty tile
+                        
+                        // Oblicz pozycję w tilesetcie (GID - 1 bo firstgid=1)
+                        const tileId = gid - 1;
+                        const srcX = (tileId % tilesPerRow) * mapData.tile_width;
+                        const srcY = Math.floor(tileId / tilesPerRow) * mapData.tile_height;
+                        
+                        // Pozycja na canvas (odwrócona oś Y)
+                        const destX = x * tileSize * scale;
+                        const destY = (mapData.height - y - 1) * tileSize * scale;
+                        
+                        // Rysuj tile
+                        ctx.drawImage(
+                            tilesetImage,
+                            srcX, srcY, mapData.tile_width, mapData.tile_height,
+                            destX, destY, tileSize * scale, tileSize * scale
+                        );
+                    }
+                }
+            } else {
+                // Fallback - siatka jeśli mapa nie załadowana
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.lineWidth = 0.5;
+                for (let x = 0; x < canvas.width; x += tileSize * scale) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                for (let y = 0; y < canvas.height; y += tileSize * scale) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+            }
+            
+            // Rysuj strefy startowe (półprzezroczyste) - tylko obramowania
+            // Strefa Koronna (dół)
+            ctx.strokeStyle = 'rgba(200, 50, 50, 0.5)';
+            ctx.lineWidth = 3;
+            const crownZoneY = (data.map_height - 15) * tileSize * scale;
+            ctx.strokeRect(0, crownZoneY, canvas.width, canvas.height - crownZoneY);
+            
+            // Strefa Kozacy (góra)
+            ctx.strokeStyle = 'rgba(50, 50, 200, 0.5)';
+            const cossackZoneY = 15 * tileSize * scale;
+            ctx.strokeRect(0, 0, canvas.width, cossackZoneY);
+            
+            // Rysuj jednostki
+            data.agents.forEach(agent => {
+                const x = (agent.x + 0.5) * tileSize * scale;
+                const y = (data.map_height - agent.y - 0.5) * tileSize * scale;
+                
+                // Rysuj sprite jeśli jest dostępny
+                const sprite = spriteCache[agent.sprite_path];
+                if (sprite) {
+                    const spriteSize = tileSize * scale * 1.5;
+                    ctx.drawImage(sprite, 
+                        x - spriteSize / 2, 
+                        y - spriteSize / 2, 
+                        spriteSize, 
+                        spriteSize
+                    );
+                } else {
+                    // Fallback - kolorowy kształt na podstawie frakcji i typu
+                    const baseColor = agent.faction === 'Armia Koronna' ? '#ff6b6b' : '#4dabf7';
+                    const size = 8 * scale;
+                    
+                    ctx.fillStyle = baseColor;
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    
+                    // Różne kształty dla różnych typów jednostek
+                    if (agent.unit_type.includes('Piechota')) {
+                        // Kwadrat dla piechoty
+                        ctx.fillRect(x - size, y - size, size * 2, size * 2);
+                        ctx.strokeRect(x - size, y - size, size * 2, size * 2);
+                    } else if (agent.unit_type.includes('Jazda') || agent.unit_type.includes('Cavalry')) {
+                        // Trójkąt dla jazdy
+                        ctx.beginPath();
+                        ctx.moveTo(x, y - size * 1.5);
+                        ctx.lineTo(x - size * 1.3, y + size);
+                        ctx.lineTo(x + size * 1.3, y + size);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    } else if (agent.unit_type.includes('Dragonia')) {
+                        // Romb dla dragonii
+                        ctx.beginPath();
+                        ctx.moveTo(x, y - size * 1.5);
+                        ctx.lineTo(x + size, y);
+                        ctx.lineTo(x, y + size * 1.5);
+                        ctx.lineTo(x - size, y);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    } else {
+                        // Koło dla pozostałych
+                        ctx.beginPath();
+                        ctx.arc(x, y, size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                }
+                
+                // Paski HP i morale
+                const barWidth = 28 * scale;
+                const barHeight = 5 * scale;
+                
+                // HP (zielony) - dolny
+                const hpY = y - 16 * scale;
+                const hpPercent = agent.hp / agent.max_hp;
+                
+                // Tło paska HP
+                ctx.fillStyle = '#c00';
+                ctx.fillRect(x - barWidth/2, hpY - barHeight/2, barWidth, barHeight);
+                
+                // Wypełnienie paska HP
+                if (hpPercent > 0) {
+                    ctx.fillStyle = '#0c0';
+                    ctx.fillRect(x - barWidth/2, hpY - barHeight/2, barWidth * hpPercent, barHeight);
+                }
+                
+                // Ramka paska HP
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - barWidth/2, hpY - barHeight/2, barWidth, barHeight);
+                
+                // Morale (cyan) - górny
+                const moraleY = y - 24 * scale;
+                const moralePercent = agent.morale / agent.max_morale;
+                
+                // Tło paska morale
+                ctx.fillStyle = '#666';
+                ctx.fillRect(x - barWidth/2, moraleY - barHeight/2, barWidth, barHeight);
+                
+                // Wypełnienie paska morale
+                if (moralePercent > 0) {
+                    ctx.fillStyle = '#0cc';
+                    ctx.fillRect(x - barWidth/2, moraleY - barHeight/2, barWidth * moralePercent, barHeight);
+                }
+                
+                // Ramka paska morale
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - barWidth/2, moraleY - barHeight/2, barWidth, barHeight);
+            });
+        }
+        
+        // Aktualizuj status
+        function updateStatus(status, text) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `simulation-status status-${status}`;
+            statusEl.textContent = text;
+        }
+        
+        // Inicjalizacja
+        loadUnitTypes();
+    </script>
+    
+    <!-- Modal zwycięstwa -->
+    <div id="victoryModal" class="victory-modal">
+        <div class="victory-content">
+            <div class="victory-title">🏆 KONIEC BITWY 🏆</div>
+            <div id="victoryWinner" class="victory-winner"></div>
+            <div id="victoryStats" class="victory-stats"></div>
+            <button class="victory-button" onclick="restartSimulation()">🔄 Nowa Bitwa</button>
+            <button class="victory-button" onclick="closeVictoryModal()">📊 Zobacz Pole Bitwy</button>
+        </div>
+    </div>
+</body>
+</html>
