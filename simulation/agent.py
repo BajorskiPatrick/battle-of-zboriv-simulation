@@ -28,10 +28,20 @@ class MilitaryAgent(mesa.Agent):
         self.target_pos_tuple = None
         
         # Losowy cel strategiczny w strefie frontu, aby armie się spotkały
+        # Zabezpieczenie przed wychodzeniem poza mapę
+        safe_margin = min(20, self.model.grid.width // 4)
+        center_y = self.model.grid.height // 2
+        
         if self.faction == "Armia Koronna":
-            self.strategic_target = (random.randint(20, self.model.grid.width - 20), 10)
+            # Koronna idzie do środka lub wyżej (ku Kozakom)
+            target_x = random.randint(safe_margin, self.model.grid.width - safe_margin)
+            target_y = max(10, min(center_y, self.model.grid.height - 20))
+            self.strategic_target = (target_x, target_y)
         else:
-            self.strategic_target = (random.randint(20, self.model.grid.width - 20), self.model.grid.height - 10)
+            # Kozacy idą do środka lub niżej (ku Koronnym)
+            target_x = random.randint(safe_margin, self.model.grid.width - safe_margin)
+            target_y = max(20, min(center_y, self.model.grid.height - 10))
+            self.strategic_target = (target_x, target_y)
 
     def get_pos_tuple(self):
         """ Zawsze zwraca pozycję agenta jako krotkę (x, y), niezależnie od typu self.pos. """
@@ -106,6 +116,7 @@ class MilitaryAgent(mesa.Agent):
             self.state = "FLEEING"
             safe_pos = (current_pos[0], 0) if self.faction == "Kozacy/Tatarzy" else (current_pos[0], self.model.grid.height - 1)
             self.calculate_path(safe_pos)
+            print(f"Agent {self.unique_id} ({self.unit_type}) FLEEING!")
         
         if self.state == "FLEEING":
             if self.path: self.move()
@@ -152,4 +163,9 @@ class MilitaryAgent(mesa.Agent):
             self.state = "MOVING"
             if not self.path or len(self.path) < 5:
                 self.calculate_path(self.strategic_target)
-            if self.path: self.move()
+            if self.path: 
+                self.move()
+            else:
+                # Debug: brak ścieżki
+                if self.unique_id % 10 == 0:  # Tylko co 10 agent aby nie spamować
+                    print(f"Agent {self.unique_id} at {current_pos} has no path to {self.strategic_target}")

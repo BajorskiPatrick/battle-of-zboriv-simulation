@@ -13,7 +13,7 @@ class SimulationWindow(arcade.Window):
         super().__init__(width, height, title)
         arcade.set_background_color(arcade.color.BLACK_OLIVE)
 
-        self.model = BattleOfZborowModel(MAP_PATH)
+        self.model = BattleOfZborowModel(MAP_PATH, None)  # None = użyj domyślnego scenariusza
         self.tile_map = None
         self.agent_sprites = arcade.SpriteList()
         self.tile_size = 16  # Dopasuj do rozmiaru kafelka w Tiled

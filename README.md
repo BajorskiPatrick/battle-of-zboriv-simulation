@@ -6,6 +6,18 @@ Projekt ten jest agentową symulacją historycznej Bitwy pod Zborowem, która od
 
 Celem projektu jest nie tylko wizualizacja przebiegu bitwy, ale również stworzenie narzędzia do analizy "co by było gdyby", pozwalającego badać wpływ kluczowych czynników (morale, teren, pogoda, skuteczność uzbrojenia) na ostateczny wynik starcia.
 
+### ✨ Nowe! Interfejs Webowy
+
+**Projekt został rozszerzony o pełnoprawny interfejs webowy!**
+
+🌐 **Możliwości:**
+- **Konfiguracja jednostek** - wybierz liczbę jednostek każdego typu przed rozpoczęciem bitwy
+- **Symulacja w przeglądarce** - obserwuj bitwę w czasie rzeczywistym
+- **Interaktywna legenda** - ikony i parametry wszystkich jednostek
+- **Statystyki na żywo** - liczba żołnierzy każdej strony
+
+📖 **Dokumentacja webowa:** [README_WEB.md](README_WEB.md) | [WEB_INTERFACE.md](WEB_INTERFACE.md)
+
 ### Demo
 
 
@@ -16,18 +28,22 @@ Symulacja została zbudowana w oparciu o profesjonalny i nowoczesny stack techno
 *   **Język programowania:** Python 3.9+
 *   **Silnik symulacji agentowej:** [**Mesa**](https://mesa.readthedocs.io/en/stable/) - framework dedykowany do modelowania agentowego (ABM), zarządzający harmonogramem, przestrzenią i stanem agentów.
 *   **Silnik wizualizacji 2D:** [**Arcade**](https://api.arcade.academy/) - nowoczesna biblioteka do tworzenia gier i wizualizacji 2D, oferująca wysoką wydajność i wbudowane wsparcie dla map kafelkowych.
+*   **Interfejs webowy:** [**Flask**](https://flask.palletsprojects.com/) - framework do stworzenia REST API i serwowania interfejsu HTML.
 *   **Tworzenie i obsługa mapy:**
     *   [**Tiled Map Editor**](https://www.mapeditor.org/) - edytor do tworzenia map kafelkowych, w którym zdefiniowano topografię pola bitwy i właściwości terenu.
     *   [**Pytmx**](https://pytmx.readthedocs.io/en/latest/) - biblioteka do parsowania danych z mapy `.tmx` na potrzeby silnika symulacji.
 *   **Obliczenia:** [**NumPy**](https://numpy.org/) - do wydajnych operacji na siatce kosztów ruchu.
 *   **Pathfinding:** [**Pathfinding**](https://pypi.org/project/pathfinding/) - do znajdowania optymalnych ścieżek dla agentów na mapie.
+*   **Rendering obrazów:** [**Pillow (PIL)**](https://pillow.readthedocs.io/) - generowanie klatek symulacji dla interfejsu webowego.
 
 ## 3. Instalacja i Uruchomienie
+
+### Sposób 1: Interfejs Webowy (Zalecany! 🌟)
 
 1.  **Sklonuj repozytorium:**
     ```bash
     git clone [URL_TWOJEGO_REPOZYTORIUM]
-    cd zborow_simulation
+    cd battle-of-zboriv-simulation
     ```
 
 2.  **Stwórz i aktywuj wirtualne środowisko (zalecane):**
@@ -44,17 +60,32 @@ Symulacja została zbudowana w oparciu o profesjonalny i nowoczesny stack techno
     pip install -r requirements.txt
     ```
 
-4.  **Uruchom symulację:**
+4.  **Uruchom serwer webowy:**
     ```bash
-    python main.py
+    python app.py
     ```
+
+5.  **Otwórz przeglądarkę:**
+    ```
+    http://localhost:5000
+    ```
+
+### Sposób 2: Tryb Desktop (Arcade)
+
+Uruchom oryginalną wizualizację desktop:
+```bash
+python main.py
+```
 
 ## 4. Struktura Projektu
 
 Projekt ma logiczną, modułową strukturę ułatwiającą rozwój i konserwację.
 
 ```
-zborow_simulation/
+battle-of-zboriv-simulation/
+├── app.py                         # [NOWE] Serwer Flask z REST API
+├── templates/
+│   └── index.html                 # [NOWE] Interfejs webowy
 ├── assets/
 │   ├── map/
 │   │   ├── zborow_battlefield.tmx   # Plik mapy Tiled
