@@ -44,7 +44,7 @@ def get_unit_types():
             faction = "Kozacy/Tatarzy"
         else:
             faction = "Armia Koronna"
-        
+        print(unit_name, faction)
         unit_types[unit_name] = {
             "faction": faction,
             "hp": params["hp"],
@@ -57,6 +57,100 @@ def get_unit_types():
         }
     
     return jsonify(unit_types)
+
+@app.route('/api/scenarios', methods=['GET'])
+def get_scenarios():
+    """Zwraca predefiniowane scenariusze bitwy"""
+    units = ["Piechota", "Jazda", "Piechota Kozacka", "Jazda Tatarska", "Dragonia", "Pospolite Ruszenie"]
+    scenarios = {
+        "scenario_1": {
+            "id": "scenario_1",
+            "name": "Scenariusz Podstawowy",
+            "description": "Zbalansowana bitwa z równą liczbą jednostek",
+            "units": {
+                "Piechota": 5,
+                "Jazda": 3,
+                "Piechota Kozacka": 5,
+                "Jazda Tatarska": 5
+            }
+        },
+        "scenario_2": {
+            "id": "scenario_2",
+            "name": "Przewaga Jazdy",
+            "description": "Kozacy wykorzystują mobilność jazdy tatarskiej",
+            "units": {
+                "Piechota": 3,
+                "Jazda": 2,
+                "Piechota Kozacka": 3,
+                "Jazda Tatarska": 8
+            }
+        },
+        "scenario_3": {
+            "id": "scenario_3",
+            "name": "Szturm Piechoty",
+            "description": "Obfite siły piechoty po obu stronach",
+            "units": {
+                "Piechota": 8,
+                "Dragonia": 4,
+                "Piechota Kozacka": 10,
+                "Jazda Tatarska": 2
+            }
+        },
+        "scenario_4": {
+            "id": "scenario_4",
+            "name": "Armia Koronna Dominuje",
+            "description": "Przewaga liczebna po stronie Koronnej",
+            "units": {
+                "Piechota": 10,
+                "Jazda": 6,
+                "Dragonia": 4,
+                "Piechota Kozacka": 4,
+                "Jazda Tatarska": 3
+            }
+        },
+        "scenario_5": {
+            "id": "scenario_5",
+            "name": "Mała Potyczka",
+            "description": "Szybka bitwa z mniejszą liczbą jednostek",
+            "units": {
+                "Piechota": 3,
+                "Jazda": 2,
+                "Piechota Kozacka": 3,
+                "Jazda Tatarska": 2
+            }
+        },
+        "scenario_6": {
+            "id": "scenario_6",
+            "name": "Wielka Bitwa",
+            "description": "Masywne starcie z dużą liczbą jednostek",
+            "units": {
+                "Piechota": 12,
+                "Jazda": 8,
+                "Dragonia": 6,
+                "Pospolite Ruszenie": 4,
+                "Piechota Kozacka": 12,
+                "Jazda Tatarska": 10
+            }
+        },
+        "scenario_7": {
+            "id": "scenario_7",
+            "name": "Scenariusz Rzeczywisty (1649)",
+            "description": "Oparte na historycznych danych z Bitwy pod Zborowem (W. Kucharski) - Armia Koronna ~15 000, Kozacy ~40 000, Tatarzy 50-60 000. Dokładny stosunek 1:6.3",
+            "units": {
+                "Piechota": 3,
+                "Jazda": 4,
+                "Dragonia": 2,
+                "Pospolite Ruszenie": 3,
+                "Piechota Kozacka": 32,
+                "Jazda Tatarska": 44
+            }
+        }
+    }
+    for scenario in scenarios:
+        for unit in units:
+            if unit not in scenarios[scenario]["units"]:
+                scenarios[scenario]["units"][unit] = 0
+    return jsonify(scenarios)
 
 @app.route('/api/map-data', methods=['GET'])
 def get_map_data():
@@ -109,13 +203,14 @@ def start_simulation():
 
 @app.route('/api/stop-simulation', methods=['POST'])
 def stop_simulation():
-    """Zatrzymuje symulację"""
-    global simulation_running
+    """Zatrzymuje i czyści symulację"""
+    global simulation, simulation_running
     
     with simulation_lock:
         simulation_running = False
+        simulation = None  # Wyczyść symulację
     
-    return jsonify({"status": "stopped", "message": "Symulacja zatrzymana"})
+    return jsonify({"status": "stopped", "message": "Symulacja zatrzymana i wyczyszczona"})
 
 @app.route('/api/simulation-step', methods=['GET'])
 def simulation_step():

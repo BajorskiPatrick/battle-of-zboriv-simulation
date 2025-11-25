@@ -155,8 +155,14 @@ class MilitaryAgent(mesa.Agent):
                 self.state = "ATTACKING"
                 self.path = []
                 if self.random.random() < 0.8: # Większa szansa na trafienie
-                    enemy.hp -= self.damage * 1.2 # Bonus do obrażeń
-                    enemy.morale -= self.damage * 2
+                    # Specjalny bonus dla husarii (Jazda) - niszczycielska szarża
+                    if self.unit_type == "Jazda":
+                        charge_bonus = 1.8  # Husaria ma potężny bonus do szarży
+                        enemy.hp -= self.damage * charge_bonus
+                        enemy.morale -= self.damage * 2.5  # Większy wpływ na morale
+                    else:
+                        enemy.hp -= self.damage * 1.2 # Bonus do obrażeń
+                        enemy.morale -= self.damage * 2
 
             # c) Wróg widoczny, ale poza zasięgiem
             else:

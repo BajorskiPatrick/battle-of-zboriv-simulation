@@ -25,18 +25,18 @@ class BattleOfZborowModel(mesa.Model):
         self.unit_params = {
             # --- ARMIA KORONNA ---
             "Piechota": {
-                "hp": 120, "morale": 100, "range": 5, "damage": 10, "speed": 1,
-                "description": "Wysoka dyscyplina, odporność na szarże.",
+                "hp": 130, "morale": 105, "range": 5, "damage": 12, "speed": 1,
+                "description": "Wysoka dyscyplina, odporność na szarże. Piechota cudzoziemskiego autoramentu.",
                 "sprite_path": "assets/sprites/crown_infantry.png"
             },
             "Dragonia": {
-                "hp": 90, "morale": 85, "range": 6, "damage": 8, "speed": 2,
-                "description": "Mobilna, może walczyć pieszo.",
+                "hp": 100, "morale": 90, "range": 6, "damage": 10, "speed": 2,
+                "description": "Mobilna, może walczyć pieszo. Regimenty dragonów Denhoffa i Korniakta.",
                 "sprite_path": "assets/sprites/crown_dragoon.png"
             },
             "Jazda": {
-                "hp": 100, "morale": 90, "range": 1, "damage": 20, "speed": 3,
-                "description": "Wysoka prędkość, potężny bonus do szarży.",
+                "hp": 140, "morale": 110, "range": 1, "damage": 35, "speed": 4,
+                "description": "Husaria - elita polskiej kawalerii. Niszczycielska w szarży, wysoka wytrzymałość i morale.",
                 "sprite_path": "assets/sprites/crown_cavalry.png"
             },
             "Pospolite Ruszenie": {
