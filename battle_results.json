@@ -1,0 +1,20 @@
+[
+  {
+    "timestamp": "2025-11-26 00:44:46",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Scenariusz Podstawowy",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 5,
+    "crown_count": 0,
+    "cossack_count": 5,
+    "total_agents": 5,
+    "initial_units": {
+      "Dragonia": 0,
+      "Jazda": 3,
+      "Jazda Tatarska": 5,
+      "Piechota": 5,
+      "Piechota Kozacka": 5,
+      "Pospolite Ruszenie": 0
+    }
+  }
+]

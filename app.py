@@ -18,8 +18,10 @@ CORS(app)
 simulation = None
 simulation_lock = threading.Lock()
 simulation_running = False
+current_scenario_id = None  # ID aktualnie uruchomionego scenariusza
 
 MAP_PATH = "assets/map/zborow_battlefield.tmx"
+RESULTS_FILE = "battle_results.json"
 
 @app.route('/')
 def index():
@@ -189,28 +191,77 @@ def get_map_data():
 @app.route('/api/start-simulation', methods=['POST'])
 def start_simulation():
     """Rozpoczyna nową symulację z podaną konfiguracją jednostek"""
-    global simulation, simulation_running
+    global simulation, simulation_running, current_scenario_id
     
-    config = request.json
+    data = request.json
+    config = data.get('units_config', {})
+    scenario_id = data.get('scenario_id', None)
+    
     print(f"Otrzymana konfiguracja: {config}")
+    print(f"Scenariusz ID: {scenario_id}")
     
     with simulation_lock:
         # Stwórz nowy model z konfiguracją
         simulation = BattleOfZborowModel(MAP_PATH, config)
         simulation_running = True
+        current_scenario_id = scenario_id
     
     return jsonify({"status": "started", "message": "Symulacja rozpoczęta"})
 
 @app.route('/api/stop-simulation', methods=['POST'])
 def stop_simulation():
     """Zatrzymuje i czyści symulację"""
-    global simulation, simulation_running
+    global simulation, simulation_running, current_scenario_id
     
     with simulation_lock:
         simulation_running = False
         simulation = None  # Wyczyść symulację
+        current_scenario_id = None
     
     return jsonify({"status": "stopped", "message": "Symulacja zatrzymana i wyczyszczona"})
+
+@app.route('/api/save-battle-result', methods=['POST'])
+def save_battle_result():
+    """Zapisuje wynik bitwy do pliku JSON"""
+    global current_scenario_id
+    
+    try:
+        data = request.json
+        
+        # Przygotuj wynik bitwy
+        battle_result = {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "scenario_id": current_scenario_id or data.get('scenario_id', 'unknown'),
+            "scenario_name": data.get('scenario_name', 'Unknown'),
+            "winner": data.get('winner', 'Unknown'),
+            "survivors": data.get('survivors', 0),
+            "crown_count": data.get('crown_count', 0),
+            "cossack_count": data.get('cossack_count', 0),
+            "total_agents": data.get('total_agents', 0),
+            "initial_units": data.get('initial_units', {})
+        }
+        
+        # Wczytaj istniejące wyniki lub stwórz nową listę
+        if os.path.exists(RESULTS_FILE):
+            with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+                results = json.load(f)
+        else:
+            results = []
+        
+        # Dodaj nowy wynik
+        results.append(battle_result)
+        
+        # Zapisz z powrotem do pliku
+        with open(RESULTS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+        
+        print(f"Zapisano wynik bitwy: {battle_result}")
+        
+        return jsonify({"status": "saved", "message": "Wynik bitwy zapisany"})
+    
+    except Exception as e:
+        print(f"Błąd zapisywania wyniku bitwy: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/simulation-step', methods=['GET'])
 def simulation_step():

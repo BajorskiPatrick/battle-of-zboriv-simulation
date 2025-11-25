@@ -49,13 +49,109 @@
         
         .main-grid {
             display: grid;
-            grid-template-columns: 400px 1fr 300px;
+            grid-template-columns: 1fr;
             gap: 20px;
             align-items: start;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         
         .main-grid.simulation-active {
-            grid-template-columns: 300px 1fr 300px;
+            grid-template-columns: 250px 1fr;
+            max-width: 100%;
+        }
+        
+        /* System nawigacji stron */
+        .page-container {
+            display: none;
+        }
+        
+        .page-container.active {
+            display: block;
+        }
+        
+        .navigation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+        }
+        
+        .nav-btn {
+            padding: 10px 24px;
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #2a2a2a;
+            color: #e0e0e0;
+        }
+        
+        .nav-btn:hover {
+            background: #3a3a3a;
+            border-color: #5a5a5a;
+        }
+        
+        .nav-btn.active {
+            background: #3a6b1f;
+            border-color: #4a7a2f;
+            color: #ffffff;
+        }
+        
+        /* Strona scenariuszy - wyśrodkowana */
+        .scenarios-page {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .scenarios-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        /* Strona legendy */
+        .legend-page {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .legend-factions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .legend-faction-section {
+            background: #1f1f1f;
+            border: 2px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .legend-faction-section.crown {
+            border-left: 4px solid #8b2635;
+        }
+        
+        .legend-faction-section.cossack {
+            border-left: 4px solid #1e3a8a;
+        }
+        
+        .legend-faction-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3a3a3a;
+        }
+        
+        .legend-faction-title.crown {
+            color: #d4a5a5;
+        }
+        
+        .legend-faction-title.cossack {
+            color: #a5b4d4;
         }
         
         /* Scenariusze */
@@ -363,15 +459,18 @@
             background: #1f1f1f;
             border-radius: 4px;
             padding: 15px;
-            min-height: 600px;
+            min-height: 700px;
+            width: 100%;
         }
         
         #simulationCanvas {
             width: 100%;
+            height: auto;
             border-radius: 3px;
             display: block;
             background: #2d5016;
             border: 1px solid #3a3a3a;
+            max-width: 100%;
         }
         
         .simulation-status {
@@ -486,12 +585,17 @@
             }
             
             .scenarios-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
             }
             
-            .legend-panel {
-                grid-column: 1;
-                grid-row: 3;
+            .legend-factions {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 800px) {
+            .scenarios-grid {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -597,17 +701,49 @@
             <p class="subtitle">Interaktywna symulacja agentowa historycznej bitwy</p>
         </header>
         
+        <!-- Przyciski nawigacyjne -->
+        <div class="navigation-buttons">
+            <button class="nav-btn active" id="navScenarios" onclick="showPage('scenarios')">
+                Scenariusze
+            </button>
+            <button class="nav-btn" id="navLegend" onclick="showPage('legend')">
+                Legenda Jednostek
+            </button>
+        </div>
+        
         <div class="main-grid">
-            <!-- Panel wyboru scenariusza -->
-            <div class="panel scenarios-panel" id="scenariosPanel">
-                <h2>Wybierz Scenariusz Bitwy</h2>
-                <p style="color: #b0b0b0; font-size: 0.9em; margin-bottom: 20px; line-height: 1.5;">
-                    Kliknij na scenariusz, aby rozpocząć symulację. Każdy scenariusz przedstawia różne proporcje sił i taktyki.
-                </p>
-                <div class="scenarios-grid" id="scenariosGrid"></div>
-                <div class="loader" id="loader"></div>
-            </div>
-            
+            <!-- Strona scenariuszy -->
+            <div class="page-container scenarios-page active" id="scenariosPage">
+                <div class="panel scenarios-panel">
+                    <h2>Wybierz Scenariusz Bitwy</h2>
+                    <p style="color: #b0b0b0; font-size: 0.9em; margin-bottom: 20px; line-height: 1.5;">
+                        Kliknij na scenariusz, aby rozpocząć symulację. Każdy scenariusz przedstawia różne proporcje sił i taktyki.
+                    </p>
+                    <div class="scenarios-grid" id="scenariosGrid"></div>
+                    <div class="loader" id="loader"></div>
+                    </div>
+                </div>
+                
+            <!-- Strona legendy -->
+            <div class="page-container legend-page" id="legendPage">
+                <div class="panel">
+                    <h2>Legenda Jednostek</h2>
+                    <div class="legend-factions">
+                        <!-- Armia Koronna -->
+                        <div class="legend-faction-section crown">
+                            <div class="legend-faction-title crown">Armia Koronna</div>
+                            <div id="crownLegendContainer"></div>
+                    </div>
+                        
+                        <!-- Kozacy i Tatarzy -->
+                        <div class="legend-faction-section cossack">
+                            <div class="legend-faction-title cossack">Kozacy i Tatarzy</div>
+                            <div id="cossackLegendContainer"></div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                
             <!-- Panel kontroli (ukryty na początku) -->
             <div class="panel control-panel" id="controlPanel" style="display: none;">
                 <h2>Kontrola Symulacji</h2>
@@ -627,15 +763,10 @@
                     Gotowa do startu
                 </div>
                 <canvas id="simulationCanvas"></canvas>
-            </div>
-            
-            <!-- Panel legendy -->
-            <div class="panel legend-panel">
-                <h2>Legenda Jednostek</h2>
-                <div id="legendContainer"></div>
                 
-                <div class="battle-stats" id="battleStats" style="display: none;">
-                    <h3 style="margin-bottom: 12px; font-size: 1.1em; font-weight: 500; color: #ffffff; padding-top: 15px; border-top: 1px solid #3a3a3a;">Statystyki Bitwy</h3>
+                <!-- Statystyki bitwy podczas symulacji -->
+                <div class="battle-stats" id="battleStats" style="display: none; position: absolute; bottom: 20px; right: 20px; background: rgba(26, 26, 26, 0.9); border: 1px solid #3a3a3a; padding: 15px; border-radius: 4px; min-width: 200px;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.1em; font-weight: 500; color: #ffffff; padding-bottom: 10px; border-bottom: 1px solid #3a3a3a;">Statystyki Bitwy</h3>
                     <div class="stat-row">
                         <span class="stat-label-main crown-color">Armia Koronna:</span>
                         <span class="stat-value-main crown-color" id="crownCount">0</span>
@@ -657,6 +788,9 @@
         let unitTypes = {};
         let scenarios = {};
         let simulationInterval = null;
+        let currentScenarioId = null;
+        let currentScenarioName = null;
+        let initialUnitsConfig = null;
         let canvas = document.getElementById('simulationCanvas');
         let ctx = canvas.getContext('2d');
         
@@ -785,8 +919,8 @@
                             <div class="scenario-unit-row">
                                 <span class="scenario-unit-name">${unit.name}</span>
                                 <span class="scenario-unit-count">${unit.count}</span>
-                            </div>
-                        `;
+                    </div>
+                `;
                     });
                 }
                 
@@ -845,6 +979,11 @@
             
             console.log('Wybrano scenariusz:', scenario.name);
             
+            // Zapisz informacje o scenariuszu
+            currentScenarioId = scenarioId;
+            currentScenarioName = scenario.name;
+            initialUnitsConfig = {...scenario.units};
+            
             // Pokaż loader
             document.getElementById('loader').classList.add('active');
             
@@ -853,7 +992,10 @@
                 const response = await fetch('/api/start-simulation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(scenario.units)
+                    body: JSON.stringify({
+                        units_config: scenario.units,
+                        scenario_id: scenarioId
+                    })
                 });
                 
                 const result = await response.json();
@@ -862,7 +1004,8 @@
                 if (response.ok) {
                     // Przełącz widok
                     document.querySelector('.main-grid').classList.add('simulation-active');
-                    document.getElementById('scenariosPanel').style.display = 'none';
+                    document.getElementById('scenariosPage').style.display = 'none';
+                    document.querySelector('.navigation-buttons').style.display = 'none';
                     document.getElementById('controlPanel').style.display = 'block';
                     document.getElementById('simulationArea').style.display = 'block';
                     
@@ -889,7 +1032,9 @@
             
             // Przełącz widok
             document.querySelector('.main-grid').classList.remove('simulation-active');
-            document.getElementById('scenariosPanel').style.display = 'block';
+            document.querySelector('.navigation-buttons').style.display = 'flex';
+            document.getElementById('scenariosPage').style.display = 'block';
+            showPage('scenarios');
             document.getElementById('controlPanel').style.display = 'none';
             document.getElementById('simulationArea').style.display = 'none';
             document.getElementById('battleStats').style.display = 'none';
@@ -921,10 +1066,13 @@
         }
         
         
-        // Renderuj legendę
+        // Renderuj legendę z podziałem na frakcje
         function renderLegend() {
-            const container = document.getElementById('legendContainer');
-            container.innerHTML = '';
+            const crownContainer = document.getElementById('crownLegendContainer');
+            const cossackContainer = document.getElementById('cossackLegendContainer');
+            
+            crownContainer.innerHTML = '';
+            cossackContainer.innerHTML = '';
             
             for (const [unitName, unitData] of Object.entries(unitTypes)) {
                 const legendItem = document.createElement('div');
@@ -937,7 +1085,7 @@
                          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23666%22/></svg>'">
                     <div class="legend-info">
                         <div class="legend-name">${unitName}</div>
-                        <div class="legend-faction ${factionClass}">${unitData.faction}</div>
+                        <div class="legend-faction ${factionClass}">${unitData.description || unitData.faction}</div>
                         <div class="legend-stats">
                             <div class="stat">
                                 <span class="stat-label">HP:</span>
@@ -959,7 +1107,33 @@
                     </div>
                 `;
                 
-                container.appendChild(legendItem);
+                if (unitData.faction === 'Armia Koronna') {
+                    crownContainer.appendChild(legendItem);
+                } else {
+                    cossackContainer.appendChild(legendItem);
+                }
+            }
+        }
+        
+        // Przełączanie między stronami
+        function showPage(pageName) {
+            // Ukryj wszystkie strony
+            document.querySelectorAll('.page-container').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Usuń aktywny stan z wszystkich przycisków
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Pokaż wybraną stronę
+            if (pageName === 'scenarios') {
+                document.getElementById('scenariosPage').classList.add('active');
+                document.getElementById('navScenarios').classList.add('active');
+            } else if (pageName === 'legend') {
+                document.getElementById('legendPage').classList.add('active');
+                document.getElementById('navLegend').classList.add('active');
             }
         }
         
@@ -1002,6 +1176,10 @@
                         clearInterval(simulationInterval);
                         simulationInterval = null;
                     }
+                    // Przekaż również statystyki do modala
+                    data.battle_status.crown_count = data.stats.crown_count;
+                    data.battle_status.cossack_count = data.stats.cossack_count;
+                    data.battle_status.total_agents = data.stats.total_agents;
                     showVictoryModal(data.battle_status);
                 }
             } catch (error) {
@@ -1010,7 +1188,7 @@
         }
         
         // Pokaż modal zwycięstwa
-        function showVictoryModal(battleStatus) {
+        async function showVictoryModal(battleStatus) {
             const modal = document.getElementById('victoryModal');
             const winnerEl = document.getElementById('victoryWinner');
             const statsEl = document.getElementById('victoryStats');
@@ -1038,7 +1216,7 @@
             if (battleStatus.winner !== 'Remis') {
                 statsEl.innerHTML = `
                     <div>Pozostało jednostek: <strong>${battleStatus.survivors}</strong></div>
-                    <div>Wróg całkowicie rozgromiony</div>
+                    
                 `;
             } else {
                 statsEl.innerHTML = `
@@ -1047,8 +1225,46 @@
                 `;
             }
             
+            // Zapisz wynik bitwy do JSON
+            await saveBattleResult(battleStatus);
+            
             modal.classList.add('active');
             updateStatus('stopped', 'Bitwa zakończona');
+        }
+        
+        // Zapisz wynik bitwy
+        async function saveBattleResult(battleStatus) {
+            try {
+                // Pobierz aktualne statystyki
+                const crownCount = parseInt(document.getElementById('crownCount').textContent) || 0;
+                const cossackCount = parseInt(document.getElementById('cossackCount').textContent) || 0;
+                const totalCount = parseInt(document.getElementById('totalCount').textContent) || 0;
+                
+                const resultData = {
+                    scenario_id: currentScenarioId,
+                    scenario_name: currentScenarioName || 'Unknown',
+                    winner: battleStatus.winner || 'Remis',
+                    survivors: battleStatus.survivors || 0,
+                    crown_count: crownCount,
+                    cossack_count: cossackCount,
+                    total_agents: totalCount,
+                    initial_units: initialUnitsConfig || {}
+                };
+                
+                const response = await fetch('/api/save-battle-result', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(resultData)
+                });
+                
+                if (response.ok) {
+                    console.log('Wynik bitwy zapisany:', resultData);
+                } else {
+                    console.error('Błąd zapisywania wyniku bitwy');
+                }
+            } catch (error) {
+                console.error('Błąd zapisywania wyniku bitwy:', error);
+            }
         }
         
         // Zamknij modal zwycięstwa
