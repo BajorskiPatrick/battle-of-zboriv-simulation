@@ -18,8 +18,10 @@ CORS(app)
 simulation = None
 simulation_lock = threading.Lock()
 simulation_running = False
+current_scenario_id = None  # ID aktualnie uruchomionego scenariusza
 
 MAP_PATH = "assets/map/zborow_battlefield.tmx"
+RESULTS_FILE = "battle_results.json"
 
 @app.route('/')
 def index():
@@ -44,7 +46,7 @@ def get_unit_types():
             faction = "Kozacy/Tatarzy"
         else:
             faction = "Armia Koronna"
-        
+        print(unit_name, faction)
         unit_types[unit_name] = {
             "faction": faction,
             "hp": params["hp"],
@@ -57,6 +59,100 @@ def get_unit_types():
         }
     
     return jsonify(unit_types)
+
+@app.route('/api/scenarios', methods=['GET'])
+def get_scenarios():
+    """Zwraca predefiniowane scenariusze bitwy"""
+    units = ["Piechota", "Jazda", "Piechota Kozacka", "Jazda Tatarska", "Dragonia", "Pospolite Ruszenie"]
+    scenarios = {
+        "scenario_1": {
+            "id": "scenario_1",
+            "name": "Scenariusz Podstawowy",
+            "description": "Zbalansowana bitwa z równą liczbą jednostek",
+            "units": {
+                "Piechota": 5,
+                "Jazda": 3,
+                "Piechota Kozacka": 5,
+                "Jazda Tatarska": 5
+            }
+        },
+        "scenario_2": {
+            "id": "scenario_2",
+            "name": "Przewaga Jazdy",
+            "description": "Kozacy wykorzystują mobilność jazdy tatarskiej",
+            "units": {
+                "Piechota": 3,
+                "Jazda": 2,
+                "Piechota Kozacka": 3,
+                "Jazda Tatarska": 8
+            }
+        },
+        "scenario_3": {
+            "id": "scenario_3",
+            "name": "Szturm Piechoty",
+            "description": "Obfite siły piechoty po obu stronach",
+            "units": {
+                "Piechota": 8,
+                "Dragonia": 4,
+                "Piechota Kozacka": 10,
+                "Jazda Tatarska": 2
+            }
+        },
+        "scenario_4": {
+            "id": "scenario_4",
+            "name": "Armia Koronna Dominuje",
+            "description": "Przewaga liczebna po stronie Koronnej",
+            "units": {
+                "Piechota": 10,
+                "Jazda": 6,
+                "Dragonia": 4,
+                "Piechota Kozacka": 4,
+                "Jazda Tatarska": 3
+            }
+        },
+        "scenario_5": {
+            "id": "scenario_5",
+            "name": "Mała Potyczka",
+            "description": "Szybka bitwa z mniejszą liczbą jednostek",
+            "units": {
+                "Piechota": 3,
+                "Jazda": 2,
+                "Piechota Kozacka": 3,
+                "Jazda Tatarska": 2
+            }
+        },
+        "scenario_6": {
+            "id": "scenario_6",
+            "name": "Wielka Bitwa",
+            "description": "Masywne starcie z dużą liczbą jednostek",
+            "units": {
+                "Piechota": 12,
+                "Jazda": 8,
+                "Dragonia": 6,
+                "Pospolite Ruszenie": 4,
+                "Piechota Kozacka": 12,
+                "Jazda Tatarska": 10
+            }
+        },
+        "scenario_7": {
+            "id": "scenario_7",
+            "name": "Scenariusz Rzeczywisty (1649)",
+            "description": "Oparte na historycznych danych z Bitwy pod Zborowem (W. Kucharski) - Armia Koronna ~15 000, Kozacy ~40 000, Tatarzy 50-60 000. Dokładny stosunek 1:6.3",
+            "units": {
+                "Piechota": 3,
+                "Jazda": 4,
+                "Dragonia": 2,
+                "Pospolite Ruszenie": 3,
+                "Piechota Kozacka": 32,
+                "Jazda Tatarska": 44
+            }
+        }
+    }
+    for scenario in scenarios:
+        for unit in units:
+            if unit not in scenarios[scenario]["units"]:
+                scenarios[scenario]["units"][unit] = 0
+    return jsonify(scenarios)
 
 @app.route('/api/map-data', methods=['GET'])
 def get_map_data():
@@ -95,27 +191,77 @@ def get_map_data():
 @app.route('/api/start-simulation', methods=['POST'])
 def start_simulation():
     """Rozpoczyna nową symulację z podaną konfiguracją jednostek"""
-    global simulation, simulation_running
+    global simulation, simulation_running, current_scenario_id
     
-    config = request.json
+    data = request.json
+    config = data.get('units_config', {})
+    scenario_id = data.get('scenario_id', None)
+    
     print(f"Otrzymana konfiguracja: {config}")
+    print(f"Scenariusz ID: {scenario_id}")
     
     with simulation_lock:
         # Stwórz nowy model z konfiguracją
         simulation = BattleOfZborowModel(MAP_PATH, config)
         simulation_running = True
+        current_scenario_id = scenario_id
     
     return jsonify({"status": "started", "message": "Symulacja rozpoczęta"})
 
 @app.route('/api/stop-simulation', methods=['POST'])
 def stop_simulation():
-    """Zatrzymuje symulację"""
-    global simulation_running
+    """Zatrzymuje i czyści symulację"""
+    global simulation, simulation_running, current_scenario_id
     
     with simulation_lock:
         simulation_running = False
+        simulation = None  # Wyczyść symulację
+        current_scenario_id = None
     
-    return jsonify({"status": "stopped", "message": "Symulacja zatrzymana"})
+    return jsonify({"status": "stopped", "message": "Symulacja zatrzymana i wyczyszczona"})
+
+@app.route('/api/save-battle-result', methods=['POST'])
+def save_battle_result():
+    """Zapisuje wynik bitwy do pliku JSON"""
+    global current_scenario_id
+    
+    try:
+        data = request.json
+        
+        # Przygotuj wynik bitwy
+        battle_result = {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "scenario_id": current_scenario_id or data.get('scenario_id', 'unknown'),
+            "scenario_name": data.get('scenario_name', 'Unknown'),
+            "winner": data.get('winner', 'Unknown'),
+            "survivors": data.get('survivors', 0),
+            "crown_count": data.get('crown_count', 0),
+            "cossack_count": data.get('cossack_count', 0),
+            "total_agents": data.get('total_agents', 0),
+            "initial_units": data.get('initial_units', {})
+        }
+        
+        # Wczytaj istniejące wyniki lub stwórz nową listę
+        if os.path.exists(RESULTS_FILE):
+            with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+                results = json.load(f)
+        else:
+            results = []
+        
+        # Dodaj nowy wynik
+        results.append(battle_result)
+        
+        # Zapisz z powrotem do pliku
+        with open(RESULTS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+        
+        print(f"Zapisano wynik bitwy: {battle_result}")
+        
+        return jsonify({"status": "saved", "message": "Wynik bitwy zapisany"})
+    
+    except Exception as e:
+        print(f"Błąd zapisywania wyniku bitwy: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/simulation-step', methods=['GET'])
 def simulation_step():

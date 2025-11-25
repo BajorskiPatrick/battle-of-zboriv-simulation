@@ -7,3 +7,4 @@ pygame
 flask
 flask-cors
 pillow
+pdfplumber
