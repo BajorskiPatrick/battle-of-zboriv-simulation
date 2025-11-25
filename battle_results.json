@@ -16,5 +16,41 @@
       "Piechota Kozacka": 5,
       "Pospolite Ruszenie": 0
     }
+  },
+  {
+    "timestamp": "2025-11-26 00:53:51",
+    "scenario_id": "scenario_3",
+    "scenario_name": "Szturm Piechoty",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 5,
+    "crown_count": 0,
+    "cossack_count": 5,
+    "total_agents": 5,
+    "initial_units": {
+      "Dragonia": 4,
+      "Jazda": 0,
+      "Jazda Tatarska": 2,
+      "Piechota": 8,
+      "Piechota Kozacka": 10,
+      "Pospolite Ruszenie": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-26 00:54:36",
+    "scenario_id": "scenario_4",
+    "scenario_name": "Armia Koronna Dominuje",
+    "winner": "Armia Koronna",
+    "survivors": 20,
+    "crown_count": 20,
+    "cossack_count": 0,
+    "total_agents": 20,
+    "initial_units": {
+      "Dragonia": 4,
+      "Jazda": 6,
+      "Jazda Tatarska": 3,
+      "Piechota": 10,
+      "Piechota Kozacka": 4,
+      "Pospolite Ruszenie": 0
+    }
   }
 ]
