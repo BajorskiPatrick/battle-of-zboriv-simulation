@@ -52,5 +52,127 @@
       "Piechota Kozacka": 4,
       "Pospolite Ruszenie": 0
     }
+  },
+  {
+    "timestamp": "2025-11-26 17:02:09",
+    "scenario_id": "scenario_6",
+    "scenario_name": "Wielka Bitwa",
+    "winner": "Armia Koronna",
+    "survivors": 26,
+    "crown_count": 26,
+    "cossack_count": 0,
+    "total_agents": 26,
+    "initial_units": {
+      "Dragonia": 6,
+      "Jazda": 8,
+      "Jazda Tatarska": 10,
+      "Piechota": 12,
+      "Piechota Kozacka": 12,
+      "Pospolite Ruszenie": 4
+    }
+  },
+  {
+    "timestamp": "2025-11-26 21:59:54",
+    "scenario_id": "custom",
+    "scenario_name": "Własna Bitwa",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 2,
+    "crown_count": 0,
+    "cossack_count": 2,
+    "total_agents": 2,
+    "initial_units": {
+      "Dragonia": 3,
+      "Jazda": 3,
+      "Jazda Tatarska": 2,
+      "Piechota Kozacka": 4
+    }
+  },
+  {
+    "timestamp": "2025-11-26 22:02:05",
+    "scenario_id": "custom",
+    "scenario_name": "Własna Bitwa",
+    "winner": "Armia Koronna",
+    "survivors": 5,
+    "crown_count": 5,
+    "cossack_count": 0,
+    "total_agents": 5,
+    "initial_units": {
+      "Dragonia": 3,
+      "Jazda Tatarska": 1,
+      "Piechota": 2,
+      "Piechota Kozacka": 1
+    }
+  },
+  {
+    "timestamp": "2025-11-26 22:02:44",
+    "scenario_id": "scenario_7",
+    "scenario_name": "Scenariusz Rzeczywisty (1649)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 75,
+    "crown_count": 0,
+    "cossack_count": 75,
+    "total_agents": 75,
+    "initial_units": {
+      "Dragonia": 2,
+      "Jazda": 4,
+      "Jazda Tatarska": 44,
+      "Piechota": 3,
+      "Piechota Kozacka": 32,
+      "Pospolite Ruszenie": 3
+    }
+  },
+  {
+    "timestamp": "2025-11-26 22:11:51",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Scenariusz Podstawowy",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 7,
+    "crown_count": 0,
+    "cossack_count": 7,
+    "total_agents": 7,
+    "initial_units": {
+      "Dragonia": 0,
+      "Jazda": 3,
+      "Jazda Tatarska": 5,
+      "Piechota": 5,
+      "Piechota Kozacka": 5,
+      "Pospolite Ruszenie": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-26 22:12:35",
+    "scenario_id": "scenario_4",
+    "scenario_name": "Armia Koronna Dominuje",
+    "winner": "Armia Koronna",
+    "survivors": 20,
+    "crown_count": 20,
+    "cossack_count": 0,
+    "total_agents": 20,
+    "initial_units": {
+      "Dragonia": 4,
+      "Jazda": 6,
+      "Jazda Tatarska": 3,
+      "Piechota": 10,
+      "Piechota Kozacka": 4,
+      "Pospolite Ruszenie": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-26 22:12:50",
+    "scenario_id": "scenario_7",
+    "scenario_name": "Scenariusz Rzeczywisty (1649)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 76,
+    "crown_count": 0,
+    "cossack_count": 76,
+    "total_agents": 76,
+    "initial_units": {
+      "Dragonia": 2,
+      "Jazda": 4,
+      "Jazda Tatarska": 44,
+      "Piechota": 3,
+      "Piechota Kozacka": 32,
+      "Pospolite Ruszenie": 3
+    }
   }
 ]
