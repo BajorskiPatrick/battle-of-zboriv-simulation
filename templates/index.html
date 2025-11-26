@@ -615,6 +615,66 @@
             display: block;
         }
         
+        /* --- STYLES FOR CUSTOM BATTLE --- */
+        .custom-layout {
+            display: flex;
+            gap: 20px;
+            height: 100%;
+            min-height: 600px;
+        }
+        .side-panel {
+            flex: 1;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #3a3a3a;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .center-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #222;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+        }
+        .crown-border { border-top: 4px solid #d32f2f; }
+        .cossack-border { border-top: 4px solid #1976d2; }
+        
+        .unit-control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #333;
+            border-radius: 4px;
+        }
+        .unit-control-name { font-weight: 500; font-size: 0.95em; }
+        .unit-control-actions { display: flex; align-items: center; gap: 10px; }
+        .btn-small { 
+            padding: 2px 10px; 
+            font-size: 1.2em; 
+            width: 32px; 
+            height: 32px;
+            background: #444;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-small:hover { background: #555; }
+        .count-display { font-size: 1.2em; width: 30px; text-align: center; font-weight: bold; }
+        
+        .vs-badge { font-size: 4em; font-weight: 900; color: #444; margin: 30px 0; letter-spacing: 5px; }
+        .total-summary { display: flex; gap: 30px; font-size: 2.5em; font-weight: bold; margin-bottom: 40px; }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -719,10 +779,58 @@
                     <p style="color: #b0b0b0; font-size: 0.9em; margin-bottom: 20px; line-height: 1.5;">
                         Kliknij na scenariusz, aby rozpocząć symulację. Każdy scenariusz przedstawia różne proporcje sił i taktyki.
                     </p>
+                    
+                    <!-- Button to open Custom Battle -->
+                    <button class="btn btn-start" onclick="showCustomBattle()" style="margin-bottom: 25px; background: linear-gradient(45deg, #4a148c, #7b1fa2); width: 100%; padding: 15px; font-size: 1.1em;">
+                        🛠️ Stwórz Własną Bitwę (Custom)
+                    </button>
+
                     <div class="scenarios-grid" id="scenariosGrid"></div>
                     <div class="loader" id="loader"></div>
+                </div>
+            </div>
+
+            <!-- Strona Własnej Bitwy (Custom Battle) -->
+            <div class="page-container custom-page" id="customBattlePage">
+                <div class="custom-layout">
+                    <!-- Lewy Panel: Korona -->
+                    <div class="panel side-panel crown-border">
+                        <h2 class="crown-color" style="margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px;">Armia Koronna</h2>
+                        <div class="unit-controls" id="crownControls">
+                            <!-- Generowane przez JS -->
+                        </div>
+                    </div>
+
+                    <!-- Środkowy Panel: Info i Start -->
+                    <div class="panel center-panel">
+                        <h2 style="margin-bottom: 10px;">Konfiguracja Bitwy</h2>
+                        <p style="color: #aaa;">Ustaw liczebność wojsk po obu stronach.</p>
+                        
+                        <div class="vs-badge">VS</div>
+                        
+                        <div class="total-summary">
+                            <div id="crownTotalDisplay" class="crown-color">0</div>
+                            <div style="color: #555;">:</div>
+                            <div id="cossackTotalDisplay" class="cossack-color">0</div>
+                        </div>
+                        
+                        <button class="btn btn-start" onclick="startCustomSimulation()" style="width: 80%; padding: 15px; font-size: 1.2em; margin-bottom: 15px;">
+                            ROZPOCZNIJ BITWĘ
+                        </button>
+                        <button class="btn" onclick="backToScenarios()" style="width: 80%; background: #333; border: 1px solid #444;">
+                            ANULUJ
+                        </button>
+                    </div>
+
+                    <!-- Prawy Panel: Kozacy -->
+                    <div class="panel side-panel cossack-border">
+                        <h2 class="cossack-color" style="margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px;">Kozacy i Tatarzy</h2>
+                        <div class="unit-controls" id="cossackControls">
+                            <!-- Generowane przez JS -->
+                        </div>
                     </div>
                 </div>
+            </div>
                 
             <!-- Strona legendy -->
             <div class="page-container legend-page" id="legendPage">
@@ -800,6 +908,121 @@
         // Dane mapy z Tiled
         let mapData = null;
         let tilesetImage = null;
+
+        // --- CUSTOM BATTLE LOGIC ---
+        let customUnits = {};
+
+        function showCustomBattle() {
+            // Hide other pages
+            document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+            document.getElementById('customBattlePage').classList.add('active');
+            
+            // Initialize counts if empty
+            if (Object.keys(customUnits).length === 0) {
+                for (const unit in unitTypes) {
+                    customUnits[unit] = 0;
+                }
+            }
+            renderCustomControls();
+        }
+
+        function renderCustomControls() {
+            const crownContainer = document.getElementById('crownControls');
+            const cossackContainer = document.getElementById('cossackControls');
+            crownContainer.innerHTML = '';
+            cossackContainer.innerHTML = '';
+            
+            let crownTotal = 0;
+            let cossackTotal = 0;
+
+            for (const [name, data] of Object.entries(unitTypes)) {
+                const count = customUnits[name] || 0;
+                const isCrown = data.faction === 'Armia Koronna';
+                
+                if (isCrown) crownTotal += count;
+                else cossackTotal += count;
+
+                const html = `
+                    <div class="unit-control-row">
+                        <div class="unit-control-info" style="display: flex; align-items: center; gap: 10px;">
+                            <img src="/${data.sprite_path}" alt="${name}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #555;">
+                            <div class="unit-control-name" style="color: ${isCrown ? '#ff6b6b' : '#64b5f6'}">${name}</div>
+                        </div>
+                        <div class="unit-control-actions">
+                            <button class="btn btn-small" onclick="updateCustomUnit('${name}', -1)">-</button>
+                            <span class="count-display">${count}</span>
+                            <button class="btn btn-small" onclick="updateCustomUnit('${name}', 1)">+</button>
+                        </div>
+                    </div>
+                `;
+                
+                if (isCrown) crownContainer.innerHTML += html;
+                else cossackContainer.innerHTML += html;
+            }
+            
+            document.getElementById('crownTotalDisplay').innerText = crownTotal;
+            document.getElementById('cossackTotalDisplay').innerText = cossackTotal;
+        }
+
+        function updateCustomUnit(name, delta) {
+            if (!customUnits[name]) customUnits[name] = 0;
+            customUnits[name] += delta;
+            if (customUnits[name] < 0) customUnits[name] = 0;
+            if (customUnits[name] > 20) customUnits[name] = 20; // Limit per unit type
+            renderCustomControls();
+        }
+
+        function startCustomSimulation() {
+            // Filter out zero counts
+            const config = {};
+            let total = 0;
+            for (const [name, count] of Object.entries(customUnits)) {
+                if (count > 0) {
+                    config[name] = count;
+                    total += count;
+                }
+            }
+            
+            if (total === 0) {
+                alert("Wybierz przynajmniej jedną jednostkę!");
+                return;
+            }
+            
+            // Start simulation via API
+            fetch('/api/start-simulation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    units_config: config,
+                    scenario_id: 'custom'
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    currentScenarioId = 'custom';
+                    currentScenarioName = "Własna Bitwa";
+                    initialUnitsConfig = config;
+                    
+                    // Switch to simulation view
+                    document.querySelector('.main-grid').classList.add('simulation-active');
+                    document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+                    document.querySelector('.navigation-buttons').style.display = 'none';
+                    document.getElementById('simulationArea').style.display = 'block';
+                    document.getElementById('controlPanel').style.display = 'block';
+                    document.getElementById('battleStats').style.display = 'block';
+                    
+                    // Start loop
+                    if (simulationInterval) clearInterval(simulationInterval);
+                    simulationInterval = setInterval(updateSimulation, 200);
+                    
+                    updateStatus('Symulacja w toku', 'running');
+                }
+            })
+            .catch(error => console.error('Error starting custom simulation:', error));
+        }
         
         // Funkcja do ładowania sprite'a
         function loadSprite(spritePath) {
@@ -1032,8 +1255,8 @@
             
             // Przełącz widok
             document.querySelector('.main-grid').classList.remove('simulation-active');
-            document.querySelector('.navigation-buttons').style.display = 'flex';
-            document.getElementById('scenariosPage').style.display = 'block';
+            document.querySelector('.navigation-buttons').style.display = '';
+            document.getElementById('scenariosPage').style.display = '';
             showPage('scenarios');
             document.getElementById('controlPanel').style.display = 'none';
             document.getElementById('simulationArea').style.display = 'none';

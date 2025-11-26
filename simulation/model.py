@@ -25,34 +25,34 @@ class BattleOfZborowModel(mesa.Model):
         self.unit_params = {
             # --- ARMIA KORONNA ---
             "Piechota": {
-                "hp": 130, "morale": 105, "range": 5, "damage": 12, "speed": 1,
+                "hp": 110, "morale": 95, "range": 4, "damage": 10, "speed": 1,
                 "description": "Wysoka dyscyplina, odporność na szarże. Piechota cudzoziemskiego autoramentu.",
                 "sprite_path": "assets/sprites/crown_infantry.png"
             },
             "Dragonia": {
-                "hp": 100, "morale": 90, "range": 6, "damage": 10, "speed": 2,
+                "hp": 90, "morale": 80, "range": 6, "damage": 8, "speed": 3,
                 "description": "Mobilna, może walczyć pieszo. Regimenty dragonów Denhoffa i Korniakta.",
                 "sprite_path": "assets/sprites/crown_dragoon.png"
             },
             "Jazda": {
-                "hp": 140, "morale": 110, "range": 1, "damage": 35, "speed": 4,
+                "hp": 150, "morale": 130, "range": 2, "damage": 55, "speed": 5,
                 "description": "Husaria - elita polskiej kawalerii. Niszczycielska w szarży, wysoka wytrzymałość i morale.",
                 "sprite_path": "assets/sprites/crown_cavalry.png"
             },
             "Pospolite Ruszenie": {
-                "hp": 70, "morale": 40, "range": 2, "damage": 7, "speed": 2,
+                "hp": 65, "morale": 35, "range": 2, "damage": 6, "speed": 2,
                 "description": "Niskie morale, podatność na panikę.",
                 "sprite_path": "assets/sprites/crown_levy.png"
             },
 
             # --- KOZACY I TATARZY ---
             "Piechota Kozacka": {
-                "hp": 100, "morale": 110, "range": 5, "damage": 12, "speed": 1,
+                "hp": 95, "morale": 120, "range": 6, "damage": 11, "speed": 1,
                 "description": "Wysoka determinacja, szybsze ładowanie.",
                 "sprite_path": "assets/sprites/cossack_infantry.png"
             },
             "Jazda Tatarska": {
-                "hp": 80, "morale": 80, "range": 7, "damage": 9, "speed": 4,
+                "hp": 75, "morale": 75, "range": 8, "damage": 8, "speed": 6,
                 "description": "Najwyższa mobilność i szybkostrzelność, niezawodna w deszczu.",
                 "sprite_path": "assets/sprites/cossack_cavalry.png"
             }
