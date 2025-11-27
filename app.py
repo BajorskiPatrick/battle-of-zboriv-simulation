@@ -20,7 +20,7 @@ simulation_lock = threading.Lock()
 simulation_running = False
 current_scenario_id = None  # ID aktualnie uruchomionego scenariusza
 
-MAP_PATH = "assets/map/zborow_battlefield.tmx"
+MAP_PATH = "assets/map/nowa_Mapa.tmx"
 RESULTS_FILE = "battle_results.json"
 
 @app.route('/')
@@ -165,14 +165,46 @@ def get_map_data():
         # Pobierz warstwę terenu
         terrain_layer = tmx_data.get_layer_by_name("Teren")
         
+        print(f"DEBUG: terrain_layer type: {type(terrain_layer)}")
+        
         # Utwórz tablicę 2D z ID tiles
+        # Pytmx przechowuje dane jako listę jednowymiarową: data[y * width + x]
         tile_grid = []
         for y in range(tmx_data.height):
             row = []
             for x in range(tmx_data.width):
-                gid = terrain_layer.data[y][x]
+                # Pobierz GID z jednowymiarowej listy
+                idx = y * tmx_data.width + x
+                if idx < len(terrain_layer.data):
+                    gid = terrain_layer.data[idx]
+                else:
+                    gid = 0
                 row.append(gid)
             tile_grid.append(row)
+        
+        # Debug: wyświetl pierwsze 10 wartości pierwszego wiersza
+        if len(tile_grid) > 0:
+            print(f"DEBUG: First row GIDs from tile_grid: {tile_grid[0][:10]}")
+            print(f"DEBUG: First 10 from raw data: {terrain_layer.data[:10]}")
+        
+        # Pobierz informacje o tilesetcie
+        tileset = tmx_data.tilesets[0] if len(tmx_data.tilesets) > 0 else None
+        tileset_image_path = "assets/map/tileset_legacy.png"  # Domyślna
+        tileset_columns = 32
+        tileset_spacing = 1
+        tileset_firstgid = 1
+        
+        if tileset:
+            # Pobierz ścieżkę do obrazu tilesettu
+            if hasattr(tileset, 'image'):
+                if isinstance(tileset.image, str):
+                    tileset_image_path = f"assets/map/{os.path.basename(tileset.image)}"
+                elif hasattr(tileset.image, 'source'):
+                    tileset_image_path = f"assets/map/{os.path.basename(tileset.image.source)}"
+            
+            tileset_columns = tileset.columns if hasattr(tileset, 'columns') else 32
+            tileset_spacing = tileset.spacing if hasattr(tileset, 'spacing') else 0
+            tileset_firstgid = tileset.firstgid if hasattr(tileset, 'firstgid') else 1
         
         map_info = {
             "width": tmx_data.width,
@@ -180,7 +212,10 @@ def get_map_data():
             "tile_width": tmx_data.tilewidth,
             "tile_height": tmx_data.tileheight,
             "tiles": tile_grid,
-            "tileset_image": "assets/map/tileset.png"
+            "tileset_image": tileset_image_path,
+            "tileset_columns": tileset_columns,
+            "tileset_spacing": tileset_spacing,
+            "tileset_firstgid": tileset_firstgid
         }
         
         return jsonify(map_info)

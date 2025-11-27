@@ -2,8 +2,8 @@ import arcade
 from visualization.window import SimulationWindow
 
 # --- Stałe konfiguracyjne ---
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 800
+SCREEN_WIDTH = 2560  # 160 kafelków * 16 pikseli
+SCREEN_HEIGHT = 1600  # 100 kafelków * 16 pikseli
 SCREEN_TITLE = "Symulacja Bitwy pod Zborowem (1649)"
 
 def main():

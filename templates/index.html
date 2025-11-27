@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Symulacja Bitwy pod Zborowem (1649)</title>
+    <!-- Cache buster: v20251127-1525 -->
     <style>
         * {
             margin: 0;
@@ -942,10 +943,11 @@
                 if (isCrown) crownTotal += count;
                 else cossackTotal += count;
 
+                const spriteSrc = data.sprite_path.startsWith('/') ? data.sprite_path : '/' + data.sprite_path;
                 const html = `
                     <div class="unit-control-row">
                         <div class="unit-control-info" style="display: flex; align-items: center; gap: 10px;">
-                            <img src="/${data.sprite_path}" alt="${name}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #555;">
+                            <img src="${spriteSrc}" alt="${name}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #555;">
                             <div class="unit-control-name" style="color: ${isCrown ? '#ff6b6b' : '#64b5f6'}">${name}</div>
                         </div>
                         <div class="unit-control-actions">
@@ -1037,11 +1039,13 @@
                     spriteCache[spritePath] = img;
                     resolve(img);
                 };
-                img.onerror = () => {
-                    console.warn(`Failed to load sprite: ${spritePath}`);
+                img.onerror = (e) => {
+                    console.error(`Failed to load sprite: ${spritePath}`, e);
                     resolve(null);
                 };
-                img.src = `/${spritePath}`;
+                // Dodaj / na początku dla ścieżki bezwzględnej
+                const fullPath = spritePath.startsWith('/') ? spritePath : '/' + spritePath;
+                img.src = fullPath;
             });
         }
         
@@ -1064,10 +1068,13 @@
                 tilesetImage.onload = () => {
                     console.log('Tileset image loaded');
                 };
-                tilesetImage.onerror = () => {
-                    console.error('Failed to load tileset image');
+                tilesetImage.onerror = (e) => {
+                    console.error('Failed to load tileset image:', mapData.tileset_image, e);
                 };
-                tilesetImage.src = `/${mapData.tileset_image}`;
+                // Dodaj / na początku, aby była ścieżka bezwzględna od roota
+                const tilesetPath = mapData.tileset_image.startsWith('/') ? mapData.tileset_image : '/' + mapData.tileset_image;
+                console.log('Loading tileset from:', tilesetPath);
+                tilesetImage.src = tilesetPath;
             } catch (error) {
                 console.error('Błąd ładowania mapy:', error);
             }
@@ -1515,31 +1522,62 @@
             ctx.fillStyle = '#2d5016';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
+            // Debug: Sprawdź stan załadowania tilesettu
+            console.log('Rendering map - mapData:', !!mapData, 'tilesetImage:', !!tilesetImage, 'complete:', tilesetImage?.complete, 'src:', tilesetImage?.src);
+            
             // Rysuj mapę z Tiled jeśli jest załadowana
             if (mapData && tilesetImage && tilesetImage.complete) {
-                const tilesPerRow = 12; // Z tileset.tsx: columns="12"
+                const tilesPerRow = mapData.tileset_columns || 32;
+                const spacing = mapData.tileset_spacing || 0;
+                const firstgid = mapData.tileset_firstgid || 1;
                 
+                let tilesDrawn = 0;
+                let debugLog = false; // Loguj tylko raz na 100 klatek
+                
+                // Pytmx już usuwa flagi transformacji, więc dostajemy czyste GID
                 for (let y = 0; y < mapData.height; y++) {
+                    const row = mapData.tiles[y];
+                    if (!row || !Array.isArray(row)) {
+                        console.error(`Row ${y} is not an array:`, row);
+                        continue;
+                    }
                     for (let x = 0; x < mapData.width; x++) {
-                        const gid = mapData.tiles[y][x];
-                        if (gid === 0) continue; // Pusty tile
+                        const gid = row[x];
+                        if (gid === 0 || gid === undefined || gid === null) continue; // Pusty tile
                         
-                        // Oblicz pozycję w tilesetcie (GID - 1 bo firstgid=1)
-                        const tileId = gid - 1;
-                        const srcX = (tileId % tilesPerRow) * mapData.tile_width;
-                        const srcY = Math.floor(tileId / tilesPerRow) * mapData.tile_height;
+                        // Oblicz pozycję w tilesetcie (pytmx już usunął flagi)
+                        const tileId = gid - firstgid;
+                        if (tileId < 0) continue; // Nieprawidłowe GID
                         
-                        // Pozycja na canvas (odwrócona oś Y)
+                        const col = tileId % tilesPerRow;
+                        const tilesetRow = Math.floor(tileId / tilesPerRow);
+                        
+                        // Uwzględnij spacing między kafelkami
+                        const srcX = col * (mapData.tile_width + spacing);
+                        const srcY = tilesetRow * (mapData.tile_height + spacing);
+                        
+                        // Pozycja na canvas (normalna oś Y, bez odwracania)
                         const destX = x * tileSize * scale;
-                        const destY = (mapData.height - y - 1) * tileSize * scale;
+                        const destY = y * tileSize * scale;
                         
-                        // Rysuj tile
+                        // Debug dla pierwszego tile'a
+                        if (tilesDrawn === 0 && !debugLog) {
+                            console.log(`First tile: gid=${gid}, tileId=${tileId}, col=${col}, tilesetRow=${tilesetRow}, src=(${srcX},${srcY}), dest=(${destX},${destY}), tilesetSize=${tilesetImage.width}x${tilesetImage.height}`);
+                            debugLog = true;
+                        }
+                        
+                        // Rysuj tile (pytmx już obsłużył transformacje)
                         ctx.drawImage(
                             tilesetImage,
                             srcX, srcY, mapData.tile_width, mapData.tile_height,
                             destX, destY, tileSize * scale, tileSize * scale
                         );
+                        tilesDrawn++;
                     }
+                }
+                
+                if (tilesDrawn === 0) {
+                    console.warn('No tiles drawn! Check mapData.tiles structure');
                 }
             } else {
                 // Fallback - siatka jeśli mapa nie załadowana
@@ -1560,21 +1598,21 @@
             }
             
             // Rysuj strefy startowe (półprzezroczyste) - tylko obramowania
-            // Strefa Koronna (dół)
-            ctx.strokeStyle = 'rgba(200, 50, 50, 0.5)';
-            ctx.lineWidth = 3;
-            const crownZoneY = (data.map_height - 15) * tileSize * scale;
-            ctx.strokeRect(0, crownZoneY, canvas.width, canvas.height - crownZoneY);
-            
-            // Strefa Kozacy (góra)
+            // Strefa Kozacy/Tatarzy (góra - początek mapy, y blisko 0)
             ctx.strokeStyle = 'rgba(50, 50, 200, 0.5)';
+            ctx.lineWidth = 3;
             const cossackZoneY = 15 * tileSize * scale;
             ctx.strokeRect(0, 0, canvas.width, cossackZoneY);
+            
+            // Strefa Koronna (dół - koniec mapy, y blisko height)
+            ctx.strokeStyle = 'rgba(200, 50, 50, 0.5)';
+            const crownZoneY = (data.map_height - 15) * tileSize * scale;
+            ctx.strokeRect(0, crownZoneY, canvas.width, canvas.height - crownZoneY);
             
             // Rysuj jednostki
             data.agents.forEach(agent => {
                 const x = (agent.x + 0.5) * tileSize * scale;
-                const y = (data.map_height - agent.y - 0.5) * tileSize * scale;
+                const y = (agent.y + 0.5) * tileSize * scale; // Bez odwracania osi Y
                 
                 // Rysuj sprite jeśli jest dostępny
                 const sprite = spriteCache[agent.sprite_path];
