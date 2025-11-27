@@ -163,7 +163,9 @@ class WebRenderer:
             if layer:
                 for x in range(self.model.width):
                     for y in range(self.model.height):
-                        gid = layer.data[y][x]
+                        raw_gid = layer.data[y][x]
+
+                        gid = raw_gid & 0x1FFFFFFF
                         
                         # Odwrócona oś Y dla prawidłowego wyświetlania
                         img_x = x * self.tile_size * self.scale
