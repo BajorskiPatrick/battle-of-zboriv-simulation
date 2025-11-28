@@ -14,6 +14,11 @@ class WebRenderer:
         # Cache dla sprite'ów
         self.sprite_cache = {}
         
+        # Cache dla tilesetów
+        self.tileset_image = None
+        self.tileset_cache = {}
+        self._load_tileset()
+        
     def load_sprite(self, sprite_path):
         """Ładuje i cache'uje sprite."""
         if sprite_path in self.sprite_cache:
@@ -39,38 +44,163 @@ class WebRenderer:
         sprite = Image.new("RGBA", (size, size), (100, 100, 100, 255))
         return sprite
     
+    def _load_tileset(self):
+        """Ładuje tileset z mapy TMX."""
+        try:
+            # Pobierz pierwszy tileset z mapy
+            if not hasattr(self.model.map_data, 'tilesets') or len(self.model.map_data.tilesets) == 0:
+                print("⚠️  Brak tilesetów w mapie TMX")
+                return
+            
+            tileset = self.model.map_data.tilesets[0]
+            print(f"Tileset znaleziony: {tileset}")
+            print(f"Tileset atrybuty: {dir(tileset)}")
+            
+            # Różne sposoby dostępu do ścieżki obrazu w pytmx
+            tileset_rel_path = None
+            
+            # Sposób 1: przez atrybut image
+            if hasattr(tileset, 'image'):
+                if isinstance(tileset.image, str):
+                    tileset_rel_path = tileset.image
+                elif hasattr(tileset.image, 'source'):
+                    tileset_rel_path = tileset.image.source
+            
+            # Sposób 2: bezpośrednio przez source
+            if not tileset_rel_path and hasattr(tileset, 'source'):
+                tileset_rel_path = tileset.source
+            
+            if not tileset_rel_path:
+                print("⚠️  Nie znaleziono źródła obrazu tilesettu w strukturze pytmx")
+                print(f"   Dostępne atrybuty: {[a for a in dir(tileset) if not a.startswith('_')]}")
+                return
+            
+            print(f"Ścieżka względna tilesettu: {tileset_rel_path}")
+            
+            # Buduj pełną ścieżkę
+            map_dir = os.path.dirname(os.path.abspath(self.model.map_data.filename))
+            tileset_path = os.path.normpath(os.path.join(map_dir, tileset_rel_path))
+            
+            print(f"Pełna ścieżka do tilesettu: {tileset_path}")
+            print(f"Katalog mapy: {map_dir}")
+            print(f"Czy plik istnieje: {os.path.exists(tileset_path)}")
+            
+            if os.path.exists(tileset_path):
+                self.tileset_image = Image.open(tileset_path).convert("RGBA")
+                print(f"✓ Załadowano tileset: {tileset_path}")
+                print(f"  Rozmiar obrazu: {self.tileset_image.size}")
+            else:
+                print(f"⚠️  BŁĄD: Nie znaleziono obrazu tilesettu!")
+                print(f"   Szukano: {tileset_path}")
+                
+        except Exception as e:
+            print(f"❌ Błąd podczas ładowania tilesettu: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _get_tile_image(self, gid):
+        """Pobiera obraz kafelka na podstawie GID."""
+        if gid == 0:
+            return None  # Pusty kafelek
+        
+        if gid in self.tileset_cache:
+            return self.tileset_cache[gid]
+        
+        if self.tileset_image is None:
+            return None
+        
+        try:
+            # Pobierz informacje o tilesetcie
+            tileset = self.model.map_data.tilesets[0]
+            tile_id = gid - tileset.firstgid
+            
+            # Oblicz pozycję kafelka w tileset image
+            # Tileset ma spacing=1, więc każdy kafelek to 16px + 1px odstępu
+            columns = 32  # Z kafelki_nowe.tsx: columns="32"
+            spacing = 1   # Z kafelki_nowe.tsx: spacing="1"
+            
+            # Pozycja z uwzględnieniem spacing
+            col = tile_id % columns
+            row = tile_id // columns
+            
+            tile_x = col * (self.tile_size + spacing)
+            tile_y = row * (self.tile_size + spacing)
+            
+            # Wytnij kafelek (bez spacing)
+            tile = self.tileset_image.crop((
+                tile_x, tile_y,
+                tile_x + self.tile_size, tile_y + self.tile_size
+            ))
+            
+            # Przeskaluj do rozmiaru docelowego (nearest neighbor dla pixel art)
+            scaled_tile = tile.resize(
+                (self.tile_size * self.scale, self.tile_size * self.scale),
+                Image.Resampling.NEAREST
+            )
+            
+            self.tileset_cache[gid] = scaled_tile
+            return scaled_tile
+        except Exception as e:
+            print(f"❌ Błąd przy pobieraniu kafelka GID {gid}: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
     def render_frame(self):
         """Renderuje aktualny stan symulacji jako obraz."""
-        # Tło - zielone pole bitwy
-        image = Image.new("RGB", (self.width, self.height), (34, 139, 34))
+        # Tło - czarne lub domyślne
+        image = Image.new("RGB", (self.width, self.height), (50, 50, 50))
+        
+        # Renderuj mapę z kafelków lub z kosztów ruchu jako fallback
+        try:
+            layer = self.model.map_data.get_layer_by_name("Teren")
+            if not layer:
+                print("⚠️  Nie znaleziono warstwy 'Teren'")
+                return image
+            
+            print(f"🗺️  Renderowanie mapy {self.model.width}x{self.model.height}")
+            print(f"   Tileset załadowany: {self.tileset_image is not None}")
+            if layer:
+                for x in range(self.model.width):
+                    for y in range(self.model.height):
+                        raw_gid = layer.data[y][x]
+
+                        gid = raw_gid & 0x1FFFFFFF
+                        
+                        # Odwrócona oś Y dla prawidłowego wyświetlania
+                        img_x = x * self.tile_size * self.scale
+                        img_y = (self.model.height - y - 1) * self.tile_size * self.scale
+                        
+                        if gid != 0 and self.tileset_image is not None:
+                            # Renderuj z tilesettu
+                            tile_img = self._get_tile_image(gid)
+                            if tile_img:
+                                image.paste(tile_img, (img_x, img_y), tile_img)
+                        else:
+                            # Fallback: koloruj według kosztów ruchu
+                            cost = self.model.terrain_costs[y, x]
+                            if cost < 1.2:
+                                color = (100, 200, 100)  # Łatwy teren - jasna zieleń
+                            elif cost < 1.5:
+                                color = (150, 150, 80)   # Średni teren - żółtobrązowy
+                            elif cost < 2.0:
+                                color = (120, 100, 70)   # Trudny teren - brąz
+                            else:
+                                color = (80, 80, 80)     # Bardzo trudny - szary
+                            
+                            draw_temp = ImageDraw.Draw(image)
+                            draw_temp.rectangle(
+                                [img_x, img_y, 
+                                 img_x + self.tile_size * self.scale - 1, 
+                                 img_y + self.tile_size * self.scale - 1],
+                                fill=color
+                            )
+        except Exception as e:
+            print(f"Błąd podczas renderowania mapy: {e}")
+            import traceback
+            traceback.print_exc()
+        
         draw = ImageDraw.Draw(image)
-        
-        # Rysuj siatkę (opcjonalnie)
-        grid_color = (50, 150, 50)
-        for x in range(0, self.width, self.tile_size * self.scale):
-            draw.line([(x, 0), (x, self.height)], fill=grid_color, width=1)
-        for y in range(0, self.height, self.tile_size * self.scale):
-            draw.line([(0, y), (self.width, y)], fill=grid_color, width=1)
-        
-        # Rysuj strefy startowe (półprzezroczyste)
-        overlay = Image.new("RGBA", (self.width, self.height), (0, 0, 0, 0))
-        overlay_draw = ImageDraw.Draw(overlay)
-        
-        # Strefa Koronna (dół - czerwonawa)
-        crown_zone_y = (self.model.height - 15) * self.tile_size * self.scale
-        overlay_draw.rectangle(
-            [0, crown_zone_y, self.width, self.height],
-            fill=(200, 50, 50, 30)
-        )
-        
-        # Strefa Kozacy/Tatarzy (góra - niebieska)
-        cossack_zone_y = 15 * self.tile_size * self.scale
-        overlay_draw.rectangle(
-            [0, 0, self.width, cossack_zone_y],
-            fill=(50, 50, 200, 30)
-        )
-        
-        image = Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
         
         # Rysuj jednostki
         for agent in self.model.schedule.agents:

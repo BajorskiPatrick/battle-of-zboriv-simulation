@@ -20,7 +20,7 @@ simulation_lock = threading.Lock()
 simulation_running = False
 current_scenario_id = None  # ID aktualnie uruchomionego scenariusza
 
-MAP_PATH = "assets/map/zborow_battlefield.tmx"
+MAP_PATH = "assets/map/nowa_Mapa.tmx"
 RESULTS_FILE = "battle_results.json"
 
 @app.route('/')
@@ -158,21 +158,101 @@ def get_scenarios():
 def get_map_data():
     """Zwraca dane mapy z Tiled (layout tiles)"""
     import pytmx
+    import xml.etree.ElementTree as ET
     
     try:
         tmx_data = pytmx.TiledMap(MAP_PATH)
         
-        # Pobierz warstwę terenu
-        terrain_layer = tmx_data.get_layer_by_name("Teren")
+        # Załaduj XML bezpośrednio, aby dostać surowe GID
+        tree = ET.parse(MAP_PATH)
+        root = tree.getroot()
         
-        # Utwórz tablicę 2D z ID tiles
+        # Znajdź warstwę "Teren"
+        terrain_layer_element = None
+        for layer in root.findall('layer'):
+            if layer.get('name') == 'Teren':
+                terrain_layer_element = layer
+                break
+        
+        if terrain_layer_element is None:
+            return jsonify({"error": "Layer 'Teren' not found"}), 404
+        
+        # Pobierz surowe dane CSV z warstwy
+        data_element = terrain_layer_element.find('data')
+        if data_element is None or data_element.get('encoding') != 'csv':
+            return jsonify({"error": "Invalid layer data format"}), 500
+        
+        csv_data = data_element.text.strip()
+        
+        # Parsuj CSV na listę liczb
+        raw_gids = [int(x.strip()) for x in csv_data.split(',') if x.strip()]
+        
+        # Konwertuj na tablicę 2D - zachowaj flagi transformacji jako osobny obiekt
         tile_grid = []
-        for y in range(tmx_data.height):
+        flip_flags = []  # Osobna tablica dla flag transformacji
+        width = int(terrain_layer_element.get('width'))
+        height = int(terrain_layer_element.get('height'))
+        
+        FLIPPED_HORIZONTALLY = 0x80000000
+        FLIPPED_VERTICALLY = 0x40000000
+        FLIPPED_DIAGONALLY = 0x20000000
+        
+        for y in range(height):
             row = []
-            for x in range(tmx_data.width):
-                gid = terrain_layer.data[y][x]
+            flags_row = []
+            for x in range(width):
+                idx = y * width + x
+                if idx < len(raw_gids):
+                    raw_gid = raw_gids[idx]
+                    
+                    # Wyodrębnij flagi transformacji
+                    flip_h = bool(raw_gid & FLIPPED_HORIZONTALLY)
+                    flip_v = bool(raw_gid & FLIPPED_VERTICALLY)
+                    flip_d = bool(raw_gid & FLIPPED_DIAGONALLY)
+                    
+                    # Czyste GID bez flag
+                    gid = raw_gid & 0x1FFFFFFF
+                    
+                    flags_row.append({
+                        'h': flip_h,
+                        'v': flip_v,
+                        'd': flip_d
+                    })
+                else:
+                    gid = 0
+                    flags_row.append({'h': False, 'v': False, 'd': False})
+                    
                 row.append(gid)
             tile_grid.append(row)
+            flip_flags.append(flags_row)
+        
+        # Pobierz informacje o tilesetcie
+        tileset = tmx_data.tilesets[0] if len(tmx_data.tilesets) > 0 else None
+        
+        # Domyślne wartości
+        tileset_image_path = "assets/map/tileset_legacy.png"
+        tileset_columns = 32
+        tileset_spacing = 1
+        tileset_firstgid = 1
+        
+        if tileset:
+            # Bezpieczne pobieranie ścieżki
+            try:
+                if hasattr(tileset, 'image') and tileset.image:
+                    if isinstance(tileset.image, str):
+                        tileset_image_path = f"assets/map/{os.path.basename(tileset.image)}"
+                    elif hasattr(tileset.image, 'source'):
+                        tileset_image_path = f"assets/map/{os.path.basename(tileset.image.source)}"
+            except Exception as img_err:
+                print(f"Warning: Error extracting tileset image path: {img_err}")
+
+            # Jeśli to nowa mapa, wymuś poprawny tileset (ponieważ .tsx może mieszać ścieżki)
+            if "nowa_Mapa" in MAP_PATH:
+                tileset_image_path = "assets/map/tileset_legacy.png"
+
+            tileset_columns = tileset.columns if hasattr(tileset, 'columns') else 32
+            tileset_spacing = tileset.spacing if hasattr(tileset, 'spacing') else 0
+            tileset_firstgid = tileset.firstgid if hasattr(tileset, 'firstgid') else 1
         
         map_info = {
             "width": tmx_data.width,
@@ -180,12 +260,20 @@ def get_map_data():
             "tile_width": tmx_data.tilewidth,
             "tile_height": tmx_data.tileheight,
             "tiles": tile_grid,
-            "tileset_image": "assets/map/tileset.png"
+            "flip_flags": flip_flags,  # Dodaj flagi transformacji
+            "tileset_image": tileset_image_path,
+            "tileset_columns": tileset_columns,
+            "tileset_spacing": tileset_spacing,
+            "tileset_firstgid": tileset_firstgid
         }
         
+        print(f"DEBUG: Map loaded successfully. Size: {tmx_data.width}x{tmx_data.height}. Tileset: {tileset_image_path}")
         return jsonify(map_info)
+
     except Exception as e:
-        print(f"Error loading map data: {e}")
+        import traceback
+        traceback.print_exc()
+        print(f"CRITICAL ERROR loading map data: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/start-simulation', methods=['POST'])
@@ -268,10 +356,11 @@ def simulation_step():
     """Wykonuje jeden krok symulacji i zwraca aktualny stan"""
     global simulation, simulation_running
     
-    if simulation is None:
-        return jsonify({"error": "Symulacja nie została rozpoczęta"}), 400
-    
     with simulation_lock:
+        # Sprawdź symulację wewnątrz locka
+        if simulation is None:
+            return jsonify({"error": "Symulacja nie została rozpoczęta"}), 400
+        
         if simulation_running:
             print(f"Executing step... Agents: {len(simulation.schedule.agents)}")
             simulation.step()

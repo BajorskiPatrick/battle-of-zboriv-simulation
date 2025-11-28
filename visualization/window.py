@@ -3,7 +3,7 @@ from simulation.model import BattleOfZborowModel
 from visualization.sprites import AgentSprite
 
 # --- Stałe konfiguracyjne ---
-MAP_PATH = "assets/map/zborow_battlefield.tmx"
+MAP_PATH = "assets/map/nowa_Mapa.tmx"
 SIMULATION_TICKS_PER_SECOND = 5.0  # Kontroluje prędkość logiki symulacji (5 kroków na sekundę)
 
 class SimulationWindow(arcade.Window):

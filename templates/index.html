@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Symulacja Bitwy pod Zborowem (1649)</title>
+    <!-- Cache buster: v20251127-1525 -->
     <style>
         * {
             margin: 0;
@@ -856,11 +857,11 @@
             <div class="panel control-panel" id="controlPanel" style="display: none;">
                 <h2>Kontrola Symulacji</h2>
                 <div class="controls">
-                    <button class="btn btn-stop" id="stopBtn" onclick="stopSimulation()">
-                        Zatrzymaj Symulację
+                    <button class="btn btn-stop" id="pauseBtn" onclick="togglePause()">
+                        ⏸️ Pauza
                     </button>
-                    <button class="btn btn-start" id="backBtn" onclick="backToScenarios()" style="margin-top: 15px; width: 100%;">
-                        Powrót do Menu Wyboru
+                    <button class="btn btn-stop" id="stopBtn" onclick="stopSimulation()" style="margin-top: 10px; width: 100%;">
+                        ⏹️ Zatrzymaj i Powrót
                     </button>
                 </div>
             </div>
@@ -897,6 +898,7 @@
         let scenarios = {};
         let simulationInterval = null;
         let currentScenarioId = null;
+        let isPaused = false;
         let currentScenarioName = null;
         let initialUnitsConfig = null;
         let canvas = document.getElementById('simulationCanvas');
@@ -942,10 +944,11 @@
                 if (isCrown) crownTotal += count;
                 else cossackTotal += count;
 
+                const spriteSrc = data.sprite_path.startsWith('/') ? data.sprite_path : '/' + data.sprite_path;
                 const html = `
                     <div class="unit-control-row">
                         <div class="unit-control-info" style="display: flex; align-items: center; gap: 10px;">
-                            <img src="/${data.sprite_path}" alt="${name}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #555;">
+                            <img src="${spriteSrc}" alt="${name}" style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #555;">
                             <div class="unit-control-name" style="color: ${isCrown ? '#ff6b6b' : '#64b5f6'}">${name}</div>
                         </div>
                         <div class="unit-control-actions">
@@ -1037,11 +1040,13 @@
                     spriteCache[spritePath] = img;
                     resolve(img);
                 };
-                img.onerror = () => {
-                    console.warn(`Failed to load sprite: ${spritePath}`);
+                img.onerror = (e) => {
+                    console.error(`Failed to load sprite: ${spritePath}`, e);
                     resolve(null);
                 };
-                img.src = `/${spritePath}`;
+                // Dodaj / na początku dla ścieżki bezwzględnej
+                const fullPath = spritePath.startsWith('/') ? spritePath : '/' + spritePath;
+                img.src = fullPath;
             });
         }
         
@@ -1057,19 +1062,36 @@
             try {
                 const response = await fetch('/api/map-data');
                 mapData = await response.json();
-                console.log('Map data loaded:', mapData.width, 'x', mapData.height);
                 
+                // Sprawdź czy backend zwrócił błąd
+                if (mapData.error) {
+                    console.error("Backend error:", mapData.error);
+                    return;
+                }
+
+                console.log('Map data loaded:', mapData.width, 'x', mapData.height);
+                console.log('Tileset config: columns=', mapData.tileset_columns, 'spacing=', mapData.tileset_spacing, 'firstgid=', mapData.tileset_firstgid);
+                console.log('First row of tiles (first 10):', mapData.tiles[0].slice(0, 10));
+                console.log('Unique GIDs in first row:', [...new Set(mapData.tiles[0])]);
+                
+                if (!mapData.tileset_image) {
+                    console.error("Missing tileset_image in mapData!");
+                    return;
+                }
+
                 // Załaduj tileset image
                 tilesetImage = new Image();
                 tilesetImage.onload = () => {
-                    console.log('Tileset image loaded');
+                    console.log('Tileset image loaded successfully');
                 };
-                tilesetImage.onerror = () => {
-                    console.error('Failed to load tileset image');
+                tilesetImage.onerror = (e) => {
+                    console.error('Failed to load tileset image:', mapData.tileset_image, e);
                 };
-                tilesetImage.src = `/${mapData.tileset_image}`;
+                
+                const tilesetPath = mapData.tileset_image.startsWith('/') ? mapData.tileset_image : '/' + mapData.tileset_image;
+                tilesetImage.src = tilesetPath;
             } catch (error) {
-                console.error('Błąd ładowania mapy:', error);
+                console.error('CRITICAL: Błąd ładowania mapy:', error);
             }
         }
         
@@ -1249,8 +1271,16 @@
         
         // Powrót do wyboru scenariuszy
         async function backToScenarios() {
-            // Zatrzymaj i wyczyść symulację
-            await stopSimulation();
+            // Zatrzymaj symulację jeśli działa
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+            }
+            
+            // Reset stanu pauzy
+            isPaused = false;
+            
+            // Wyczyść symulację
             await clearSimulation();
             
             // Przełącz widok
@@ -1261,6 +1291,14 @@
             document.getElementById('controlPanel').style.display = 'none';
             document.getElementById('simulationArea').style.display = 'none';
             document.getElementById('battleStats').style.display = 'none';
+            
+            // Reset przycisku pauzy
+            const pauseBtn = document.getElementById('pauseBtn');
+            if (pauseBtn) {
+                pauseBtn.textContent = '⏸️ Pauza';
+                pauseBtn.classList.remove('btn-start');
+                pauseBtn.classList.add('btn-stop');
+            }
             
             // Wyczyść canvas
             if (ctx) {
@@ -1361,17 +1399,29 @@
         }
         
         
-        // Zatrzymaj symulację
+        // Przełącz pauzę symulacji
+        function togglePause() {
+            isPaused = !isPaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+            
+            if (isPaused) {
+                pauseBtn.textContent = '▶️ Wznów';
+                pauseBtn.classList.remove('btn-stop');
+                pauseBtn.classList.add('btn-start');
+                updateStatus('paused', 'Symulacja wstrzymana');
+            } else {
+                pauseBtn.textContent = '⏸️ Pauza';
+                pauseBtn.classList.remove('btn-start');
+                pauseBtn.classList.add('btn-stop');
+                updateStatus('running', 'Symulacja w toku');
+            }
+        }
+        
+        // Zatrzymaj symulację całkowicie i wróć do menu
         async function stopSimulation() {
             try {
                 await fetch('/api/stop-simulation', { method: 'POST' });
-                
-                if (simulationInterval) {
-                    clearInterval(simulationInterval);
-                    simulationInterval = null;
-                }
-                
-                updateStatus('stopped', 'Symulacja zatrzymana');
+                backToScenarios();
             } catch (error) {
                 console.error('Błąd zatrzymywania symulacji:', error);
             }
@@ -1380,8 +1430,44 @@
         // Aktualizuj stan symulacji
         async function updateSimulation() {
             try {
+                // Jeśli jest pauza, renderuj tylko bez pobierania nowych danych
+                if (isPaused) {
+                    return;
+                }
+                
+                // Sprawdź czy interval jest aktywny (jeśli nie, symulacja została zatrzymana)
+                if (!simulationInterval) {
+                    return;
+                }
+                
                 const response = await fetch('/api/simulation-step');
+                
+                // Sprawdź czy odpowiedź jest OK
+                if (!response.ok) {
+                    console.warn('Simulation step failed:', response.status);
+                    // Jeśli błąd 400, zatrzymaj interval
+                    if (response.status === 400) {
+                        if (simulationInterval) {
+                            clearInterval(simulationInterval);
+                            simulationInterval = null;
+                        }
+                    }
+                    return;
+                }
+                
                 const data = await response.json();
+                
+                // Sprawdź czy otrzymaliśmy błąd
+                if (data.error) {
+                    console.warn('Simulation error:', data.error);
+                    return;
+                }
+                
+                // Sprawdź czy otrzymaliśmy poprawne dane
+                if (!data || !data.stats) {
+                    console.warn('Invalid simulation data received');
+                    return;
+                }
                 
                 console.log('Simulation step:', data.stats);
                 
@@ -1515,31 +1601,94 @@
             ctx.fillStyle = '#2d5016';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
+            // Debug: Sprawdź stan załadowania tilesettu
+            console.log('Rendering map - mapData:', !!mapData, 'tilesetImage:', !!tilesetImage, 'complete:', tilesetImage?.complete, 'src:', tilesetImage?.src);
+            
             // Rysuj mapę z Tiled jeśli jest załadowana
             if (mapData && tilesetImage && tilesetImage.complete) {
-                const tilesPerRow = 12; // Z tileset.tsx: columns="12"
+                const tilesPerRow = mapData.tileset_columns || 32;
+                const spacing = mapData.tileset_spacing || 0;
+                const firstgid = mapData.tileset_firstgid || 1;
                 
+                let tilesDrawn = 0;
+                let debugLog = false; // Loguj tylko raz na 100 klatek
+                
+                // Renderuj kafelki z obsługą transformacji
                 for (let y = 0; y < mapData.height; y++) {
-                    for (let x = 0; x < mapData.width; x++) {
-                        const gid = mapData.tiles[y][x];
-                        if (gid === 0) continue; // Pusty tile
-                        
-                        // Oblicz pozycję w tilesetcie (GID - 1 bo firstgid=1)
-                        const tileId = gid - 1;
-                        const srcX = (tileId % tilesPerRow) * mapData.tile_width;
-                        const srcY = Math.floor(tileId / tilesPerRow) * mapData.tile_height;
-                        
-                        // Pozycja na canvas (odwrócona oś Y)
-                        const destX = x * tileSize * scale;
-                        const destY = (mapData.height - y - 1) * tileSize * scale;
-                        
-                        // Rysuj tile
-                        ctx.drawImage(
-                            tilesetImage,
-                            srcX, srcY, mapData.tile_width, mapData.tile_height,
-                            destX, destY, tileSize * scale, tileSize * scale
-                        );
+                    const row = mapData.tiles[y];
+                    const flagsRow = mapData.flip_flags ? mapData.flip_flags[y] : null;
+                    
+                    if (!row || !Array.isArray(row)) {
+                        console.error(`Row ${y} is not an array:`, row);
+                        continue;
                     }
+                    
+                    for (let x = 0; x < mapData.width; x++) {
+                        const gid = row[x];
+                        if (gid === 0 || gid === undefined || gid === null) continue; // Pusty tile
+                        
+                        // Oblicz pozycję w tilesetcie
+                        const tileId = gid - firstgid;
+                        if (tileId < 0) continue; // Nieprawidłowe GID
+                        
+                        const col = tileId % tilesPerRow;
+                        const tilesetRow = Math.floor(tileId / tilesPerRow);
+                        
+                        // Uwzględnij spacing między kafelkami
+                        const srcX = col * (mapData.tile_width + spacing);
+                        const srcY = tilesetRow * (mapData.tile_height + spacing);
+                        
+                        // Pozycja na canvas
+                        const destX = x * tileSize * scale;
+                        const destY = y * tileSize * scale;
+                        
+                        // Pobierz flagi transformacji
+                        const flags = flagsRow ? flagsRow[x] : {h: false, v: false, d: false};
+                        
+                        // Zapisz stan contextu
+                        ctx.save();
+                        
+                        // Zastosuj transformacje jeśli są flagi
+                        if (flags.h || flags.v || flags.d) {
+                            // Przesuń do środka kafelka
+                            ctx.translate(destX + (tileSize * scale) / 2, destY + (tileSize * scale) / 2);
+                            
+                            // Zastosuj transformacje zgodnie z Tiled
+                            if (flags.d) {
+                                // Diagonal flip = rotate 90° + flip horizontal
+                                ctx.rotate(Math.PI / 2);
+                                ctx.scale(-1, 1);
+                            }
+                            if (flags.h) {
+                                ctx.scale(-1, 1);
+                            }
+                            if (flags.v) {
+                                ctx.scale(1, -1);
+                            }
+                            
+                            // Rysuj z centrum jako origin
+                            ctx.drawImage(
+                                tilesetImage,
+                                srcX, srcY, mapData.tile_width, mapData.tile_height,
+                                -(tileSize * scale) / 2, -(tileSize * scale) / 2, 
+                                tileSize * scale, tileSize * scale
+                            );
+                        } else {
+                            // Rysuj bez transformacji
+                            ctx.drawImage(
+                                tilesetImage,
+                                srcX, srcY, mapData.tile_width, mapData.tile_height,
+                                destX, destY, tileSize * scale, tileSize * scale
+                            );
+                        }
+                        
+                        ctx.restore();
+                        tilesDrawn++;
+                    }
+                }
+                
+                if (tilesDrawn === 0) {
+                    console.warn('No tiles drawn! Check mapData.tiles structure');
                 }
             } else {
                 // Fallback - siatka jeśli mapa nie załadowana
@@ -1560,26 +1709,27 @@
             }
             
             // Rysuj strefy startowe (półprzezroczyste) - tylko obramowania
-            // Strefa Koronna (dół)
-            ctx.strokeStyle = 'rgba(200, 50, 50, 0.5)';
-            ctx.lineWidth = 3;
-            const crownZoneY = (data.map_height - 15) * tileSize * scale;
-            ctx.strokeRect(0, crownZoneY, canvas.width, canvas.height - crownZoneY);
-            
-            // Strefa Kozacy (góra)
+            // Strefa Kozacy/Tatarzy (góra - początek mapy, y blisko 0)
             ctx.strokeStyle = 'rgba(50, 50, 200, 0.5)';
+            ctx.lineWidth = 3;
             const cossackZoneY = 15 * tileSize * scale;
             ctx.strokeRect(0, 0, canvas.width, cossackZoneY);
             
-            // Rysuj jednostki
-            data.agents.forEach(agent => {
+            // Strefa Koronna (dół - koniec mapy, y blisko height)
+            ctx.strokeStyle = 'rgba(200, 50, 50, 0.5)';
+            const crownZoneY = (data.map_height - 15) * tileSize * scale;
+            ctx.strokeRect(0, crownZoneY, canvas.width, canvas.height - crownZoneY);
+            
+            // Rysuj jednostki - sprawdź czy agents istnieje
+            if (data.agents && Array.isArray(data.agents)) {
+                data.agents.forEach(agent => {
                 const x = (agent.x + 0.5) * tileSize * scale;
-                const y = (data.map_height - agent.y - 0.5) * tileSize * scale;
+                const y = (agent.y + 0.5) * tileSize * scale; // Bez odwracania osi Y
                 
                 // Rysuj sprite jeśli jest dostępny
                 const sprite = spriteCache[agent.sprite_path];
                 if (sprite) {
-                    const spriteSize = tileSize * scale * 1.5;
+                    const spriteSize = tileSize * scale * 2.5; // Zwiększono z 1.5 do 2.5
                     ctx.drawImage(sprite, 
                         x - spriteSize / 2, 
                         y - spriteSize / 2, 
@@ -1670,6 +1820,7 @@
                 ctx.lineWidth = 1;
                 ctx.strokeRect(x - barWidth/2, moraleY - barHeight/2, barWidth, barHeight);
             });
+            }
         }
         
         // Aktualizuj status
