@@ -1,0 +1,47 @@
+:root { --bg:#1a1a1a; --panel:#222; --text:#e0e0e0; --muted:#aaa; --border:#333; --accent:#7b1fa2; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+.db-container { padding: 16px; max-width: 100%; margin: 0 auto; }
+.db-header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 16px; }
+.db-actions .btn { background: var(--panel); border:1px solid var(--border); color: var(--text); padding:8px 12px; border-radius:4px; margin-left:8px; cursor:pointer; text-decoration:none; display:inline-block; }
+.db-actions .btn:hover { border-color: var(--accent); }
+.db-filters { display:flex; flex-wrap:wrap; gap:16px; background: var(--panel); border:1px solid var(--border); padding:14px; border-radius:8px; margin-bottom:16px; }
+.filter-control { flex:1 1 220px; display:flex; flex-direction:column; gap:6px; }
+.filter-label { font-size:0.9em; color: var(--muted); letter-spacing:0.5px; text-transform:uppercase; }
+.select-wrapper { position:relative; }
+.filter-select { width:100%; padding:10px 36px 10px 12px; border-radius:6px; border:1px solid var(--border); background:#1b1b1b; color: var(--text); font-size:0.95em; appearance:none; outline:none; box-shadow:inset 0 0 0 1px transparent; transition:border 0.2s, box-shadow 0.2s; }
+.filter-select:focus { border-color: var(--accent); box-shadow:0 0 0 2px rgba(123,31,162,0.3); }
+.select-wrapper::after { content:'▾'; position:absolute; right:12px; top:50%; transform:translateY(-50%); color: var(--muted); pointer-events:none; font-size:0.8em; }
+.filter-pills { display:flex; gap:10px; background:#1b1b1b; border:1px solid var(--border); border-radius:999px; padding:6px; }
+.filter-pills .pill { flex:1; border:none; background:transparent; color: var(--muted); font-size:0.9em; padding:10px 14px; border-radius:999px; cursor:pointer; transition:all 0.2s; }
+.filter-pills .pill.active { background: var(--accent); color:#fff; box-shadow:0 6px 18px rgba(123,31,162,0.35); }
+.filter-pills .pill:hover:not(.active) { color: var(--text); background:rgba(255,255,255,0.05); }
+.db-grid { display:grid; grid-template-columns: repeat(3, minmax(280px, 1fr)); gap:16px; align-items:start; }
+.db-card { background: var(--panel); border:1px solid var(--border); border-radius:4px; padding:12px; min-width: 0; overflow:hidden; }
+.db-card h2 { margin:0 0 8px 0; font-size:1.1em; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.db-card h2 .substat { color: var(--muted); font-size: 0.95em; font-weight: normal; }
+.db-card-chart .chart-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+.chart-title-block { display:flex; flex-direction:column; gap:6px; }
+.chart-legend { display:flex; gap:10px; flex-wrap:wrap; }
+.legend-chip { display:flex; align-items:center; gap:6px; font-size:0.85em; color:#dcdcdc; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); }
+.legend-swatch { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.db-card.wide { grid-column: 1 / -1; }
+.metric { font-size: 2em; font-weight: 600; }
+.table { overflow:auto; }
+.table table { width:100%; border-collapse: collapse; }
+.table th, .table td { border-bottom:1px solid var(--border); padding:6px 8px; text-align:left; font-size: 0.95em; }
+.table th { color: var(--muted); font-weight: 600; }
+.badge { display:inline-block; padding:2px 6px; border-radius:4px; font-size:0.85em; }
+.badge.crown { background:#3a1f1f; color:#ffb3b3; }
+.badge.cossack { background:#1f273a; color:#b3d7ff; }
+.badge.draw { background:#333; color:#ddd; }
+@media (max-width: 1200px) { .db-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); } }
+@media (max-width: 800px) { .db-grid { grid-template-columns: 1fr; } }
+/* Ensure canvas scales within card */
+#winsChart { width: 100%; height: auto; display: block; }
+/* Wide and ultra-wide cards */
+.db-card.wide { grid-column: 1 / -1; }
+.db-card.ultra-wide { grid-column: 1 / -1; }
+#winsChartAnimated { width: 100%; height: auto; display: block; }
+.chart-tooltip { position: fixed; background: rgba(10,10,10,0.9); color:#fff; padding:8px 12px; border-radius:6px; font-size:0.9em; pointer-events:none; opacity:0; transform:translate(-50%, -120%); transition: opacity 0.15s ease; z-index:999; border:1px solid rgba(255,255,255,0.15); box-shadow:0 4px 12px rgba(0,0,0,0.35); }
+.chart-tooltip.visible { opacity:1; }

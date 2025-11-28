@@ -17,11 +17,35 @@ let tilesetImage = null;
 
 // --- CUSTOM BATTLE LOGIC ---
 let customUnits = {};
+let customErrorTimeout = null;
+
+function showCustomError(message) {
+    const toast = document.getElementById('customErrorToast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('visible');
+    if (customErrorTimeout) clearTimeout(customErrorTimeout);
+    customErrorTimeout = setTimeout(() => {
+        toast.classList.remove('visible');
+        customErrorTimeout = null;
+    }, 5000);
+}
+
+function hideCustomError() {
+    const toast = document.getElementById('customErrorToast');
+    if (!toast) return;
+    toast.classList.remove('visible');
+    if (customErrorTimeout) {
+        clearTimeout(customErrorTimeout);
+        customErrorTimeout = null;
+    }
+}
 
 function showCustomBattle() {
     // Hide other pages
     document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
     document.getElementById('customBattlePage').classList.add('active');
+    hideCustomError();
     
     // Initialize counts if empty
     if (Object.keys(customUnits).length === 0) {
@@ -76,24 +100,38 @@ function updateCustomUnit(name, delta) {
     customUnits[name] += delta;
     if (customUnits[name] < 0) customUnits[name] = 0;
     if (customUnits[name] > 20) customUnits[name] = 20; // Limit per unit type
+    hideCustomError();
     renderCustomControls();
 }
 
 function startCustomSimulation() {
     // Filter out zero counts
     const config = {};
-    let total = 0;
+    let crownTotal = 0;
+    let cossackTotal = 0;
     for (const [name, count] of Object.entries(customUnits)) {
         if (count > 0) {
             config[name] = count;
-            total += count;
+            const faction = unitTypes[name]?.faction;
+            if (faction === 'Armia Koronna') {
+                crownTotal += count;
+            } else if (faction === 'Kozacy/Tatarzy') {
+                cossackTotal += count;
+            }
         }
     }
     
-    if (total === 0) {
-        alert("Wybierz przynajmniej jedną jednostkę!");
+    if (Object.keys(config).length === 0) {
+        showCustomError("Dodaj jednostki, aby rozpocząć bitwę.");
         return;
     }
+
+    if (crownTotal === 0 || cossackTotal === 0) {
+        showCustomError("Każda armia musi mieć co najmniej 1 jednostkę.");
+        return;
+    }
+
+    hideCustomError();
     
     // Start simulation via API
     fetch('/api/start-simulation', {

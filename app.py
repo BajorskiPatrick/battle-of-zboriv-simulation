@@ -28,11 +28,29 @@ def index():
     """Główna strona z interfejsem konfiguracji"""
     return render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    """Strona dashboardu analitycznego wyników bitew"""
+    return render_template('dashboard.html')
+
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
     """Serwuje pliki statyczne (sprite'y, mapy) z folderu assets"""
     assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
     return send_from_directory(assets_dir, filename)
+
+@app.route('/api/battle-results', methods=['GET'])
+def get_battle_results():
+    """Zwraca zapisane wyniki bitew z battle_results.json"""
+    try:
+        if os.path.exists(RESULTS_FILE):
+            with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        else:
+            data = []
+        return jsonify({"ok": True, "data": data})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route('/api/unit-types', methods=['GET'])
 def get_unit_types():

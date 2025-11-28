@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Bitew</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+</head>
+<body>
+  <div class="db-container">
+    <header class="db-header">
+      <h1>📊 Dashboard Analizy Bitew</h1>
+      <div class="db-actions">
+        <a class="btn" href="/">⟵ Powrót</a>
+        <button class="btn" id="refreshBtn">🔄 Odśwież</button>
+      </div>
+    </header>
+
+    <section class="db-filters">
+      <div class="filter-control">
+        <label class="filter-label" for="scenarioFilter">Scenariusz</label>
+        <div class="select-wrapper">
+          <select id="scenarioFilter" class="filter-select">
+            <option value="__ALL__">Wszystkie</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-control">
+        <div class="filter-label">Okres</div>
+        <div class="filter-pills" role="group" aria-label="Filtr czasu">
+          <button type="button" class="pill active" data-time-filter="all">Cały</button>
+          <button type="button" class="pill" data-time-filter="24h">24h</button>
+          <button type="button" class="pill" data-time-filter="7d">7 dni</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="db-grid">
+      <div class="db-card wide db-card-chart">
+        <div class="chart-header">
+          <div class="chart-title-block">
+            <h2>Rozkład zwycięstw<span class="substat">• Śr. ocalałych: <span id="avgSurvivorsStat">—</span></span></h2>
+            <div class="chart-legend" id="chartLegend"></div>
+          </div>
+        </div>
+        <canvas id="winsChartAnimated"></canvas>
+        <div id="chartTooltip" class="chart-tooltip" aria-hidden="true"></div>
+      </div>
+      <div class="db-card wide">
+        <h2>Lista wyników (ostatnie)</h2>
+        <div id="resultsTable" class="table"></div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -71,6 +71,10 @@ h1 {
 }
 
 .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     padding: 10px 24px;
     border: 1px solid #4a4a4a;
     border-radius: 4px;
@@ -80,6 +84,7 @@ h1 {
     transition: all 0.2s;
     background: #2a2a2a;
     color: #e0e0e0;
+    text-decoration: none;
 }
 
 .nav-btn:hover {
@@ -628,6 +633,30 @@ h1 {
     gap: 20px;
     height: 100%;
     min-height: 600px;
+}
+.custom-page { position: relative; }
+.custom-error-toast {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    min-width: 260px;
+    max-width: 320px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(211,47,47,0.95), rgba(244,81,30,0.95));
+    border-radius: 8px;
+    border-left: 4px solid #ffab91;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+    color: #fff;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    z-index: 5;
+}
+.custom-error-toast.visible {
+    transform: translateX(0);
+    opacity: 1;
 }
 .side-panel {
     flex: 1;
