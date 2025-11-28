@@ -25,6 +25,11 @@ class MilitaryAgent(mesa.Agent):
         # Stan agenta
         self.state = "IDLE"  # Stany: IDLE, MOVING, ATTACKING, FLEEING
         self.path = []
+        
+        # --- OPTYMALIZACJA PATHFINDINGU ---
+        self.path_target_pos = None  # Gdzie był cel, gdy liczyliśmy trasę ostatnio
+        self.repath_timer = self.random.randint(0, 10) # Losowy start, aby rozłożyć obciążenie
+        
         self.target_pos_tuple = None
         
         # Losowy cel strategiczny w strefie frontu, aby armie się spotkały
@@ -66,30 +71,42 @@ class MilitaryAgent(mesa.Agent):
             return min(enemies, key=lambda e: self.distance_to(e))
         return None
 
+    def distance_to_pos(self, pos1, pos2):
+        """ Oblicza dystans szachowy (Chebyshev distance) między dwoma punktami. """
+        return max(abs(pos1[0] - pos2[0]), abs(pos1[1] - pos2[1]))
+
     def distance_to(self, other_agent):
         """ Oblicza dystans szachowy (Chebyshev distance) do innego agenta. """
         pos1 = self.get_pos_tuple()
         pos2 = other_agent.get_pos_tuple()
-        return max(abs(pos1[0] - pos2[0]), abs(pos1[1] - pos2[1]))
+        return self.distance_to_pos(pos1, pos2)
 
     def move(self):
         """ Przesuwa agenta o jeden krok wzdłuż wyznaczonej ścieżki. """
         if not self.path:
             return
 
-        next_pos_node = self.path.pop(0)
+        next_pos_node = self.path[0]
         next_pos_tuple = (next_pos_node.x, next_pos_node.y)
 
         if not self.model.grid.out_of_bounds(next_pos_tuple) and self.model.grid.is_cell_empty(next_pos_tuple):
              self.model.grid.move_agent(self, next_pos_tuple)
+             self.path.pop(0) # Usuń wykonany krok
         else:
-             # Jeśli ścieżka jest zablokowana, wyczyść ją, aby wymusić ponowne przeliczenie
-             self.path = []
+             # TRIGGER: Kolizja
+             # Jeśli ścieżka jest zablokowana, wyczyść ją.
+             # To wymusi 'if not self.path' w następnym kroku i ponowne przeliczenie (lub czekanie).
+             # Dodajemy element losowości, żeby nie wszyscy przeliczali w tej samej klatce
+             if self.random.random() < 0.5:
+                self.path = []
 
     def calculate_path(self, target_pos_tuple):
         """ Oblicza ścieżkę do celu za pomocą algorytmu A*. """
         if not isinstance(target_pos_tuple, tuple):
              target_pos_tuple = (target_pos_tuple[0], target_pos_tuple[1])
+
+        # Zapisz cel tej konkretnej ścieżki (do optymalizacji)
+        self.path_target_pos = target_pos_tuple
 
         current_pos = self.get_pos_tuple()
         
@@ -107,8 +124,36 @@ class MilitaryAgent(mesa.Agent):
             return
 
         path, _ = finder.find_path(start_node, end_node, self.model.path_grid)
+        
+        # WAŻNE: Czyścimy grid po obliczeniach (wymagane przez bibliotekę pathfinding)
         self.model.path_grid.cleanup()
+        
         self.path = path[1:] if path else []
+
+    def should_recalculate_path(self, current_target_pos):
+        """ 
+        Decyduje, czy należy przeliczyć ścieżkę (Optymalizacja). 
+        Zwraca True tylko w kluczowych momentach, oszczędzając CPU.
+        """
+        # 1. Jeśli nie mamy ścieżki, a powinniśmy się ruszać -> licz
+        if not self.path:
+            return True
+
+        # 2. Timer bezpieczeństwa (co ~15 kroków)
+        # Pozwala skorygować trasę jeśli sytuacja na mapie się zmieniła (np. inna jednostka zeszła z drogi)
+        self.repath_timer += 1
+        if self.repath_timer > 15:
+            self.repath_timer = 0
+            return True
+
+        # 3. Sprawdź, czy cel uciekł za daleko od miejsca, gdzie zmierzamy
+        if self.path_target_pos:
+            dist = self.distance_to_pos(self.path_target_pos, current_target_pos)
+            # Jeśli cel przesunął się o więcej niż 5 kratek od naszego pierwotnego celu -> przelicz
+            if dist > 5:
+                return True
+
+        return False
 
     def step(self):
         """ Główna logika AI agenta, wykonywana w każdym kroku symulacji. """
@@ -141,19 +186,34 @@ class MilitaryAgent(mesa.Agent):
             if 1 < distance <= self.attack_range:
                 if self.random.random() < 0.7:  # 70% szansy na atak
                     self.state = "ATTACKING"
-                    self.path = []
+                    # Nie czyścimy ścieżki agresywnie, może się przydać jak wróg ucieknie
+                    
+                    # Logika ataku
+                    if self.unit_type == "Jazda":
+                        charge_bonus = 1.8
+                        enemy.hp -= self.damage * charge_bonus
+                        enemy.morale -= self.damage * 2.5
+                    else:
+                        enemy.hp -= self.damage * 1.2
+                        enemy.morale -= self.damage * 2
+                        
                     if self.random.random() < 0.6: # Szansa na trafienie
                         enemy.hp -= self.damage
                         enemy.morale -= self.damage * 1.5
                 else:  # 30% szansy na skrócenie dystansu
                     self.state = "MOVING"
-                    self.calculate_path(enemy.get_pos_tuple())
+                    enemy_pos = enemy.get_pos_tuple()
+                    
+                    # OPTYMALIZACJA: Sprawdź czy trzeba liczyć trasę
+                    if self.should_recalculate_path(enemy_pos):
+                        self.calculate_path(enemy_pos)
+                    
                     if self.path: self.move()
 
             # b) Wróg w zwarciu
             elif distance <= 1:
                 self.state = "ATTACKING"
-                self.path = []
+                self.path = [] # W zwarciu nie potrzebujemy ścieżki
                 if self.random.random() < 0.8: # Większa szansa na trafienie
                     # Specjalny bonus dla husarii (Jazda) - niszczycielska szarża
                     if self.unit_type == "Jazda":
@@ -167,10 +227,13 @@ class MilitaryAgent(mesa.Agent):
             # c) Wróg widoczny, ale poza zasięgiem
             else:
                 self.state = "MOVING"
-                enemy_pos_tuple = enemy.get_pos_tuple()
-                if not self.path or self.target_pos_tuple != enemy_pos_tuple:
-                    self.target_pos_tuple = enemy_pos_tuple
-                    self.calculate_path(enemy_pos_tuple)
+                enemy_pos = enemy.get_pos_tuple()
+                
+                # OPTYMALIZACJA: Sprawdź czy trzeba liczyć trasę
+                if self.should_recalculate_path(enemy_pos):
+                    self.target_pos_tuple = enemy_pos
+                    self.calculate_path(enemy_pos)
+                
                 if self.path: self.move()
         else:
             # 4. Brak wroga w pobliżu -> szukaj agresywnie na całej mapie
@@ -180,15 +243,19 @@ class MilitaryAgent(mesa.Agent):
             if distant_enemy:
                 # Znaleziono wroga daleko - idź w jego kierunku
                 enemy_pos = distant_enemy.get_pos_tuple()
-                if not self.path or self.target_pos_tuple != enemy_pos:
+                
+                # OPTYMALIZACJA: Tutaj też używamy triggerów
+                if self.should_recalculate_path(enemy_pos):
                     self.target_pos_tuple = enemy_pos
                     self.calculate_path(enemy_pos)
+                    
+                    # Jeśli nie można dotrzeć do wroga (np. rzeka), idź do celu strategicznego
                     if not self.path:
-                        # Jeśli nie można dotrzeć bezpośrednio, idź w kierunku strategicznym
                         self.calculate_path(self.strategic_target)
             else:
                 # Naprawdę brak wrogów - idź do celu strategicznego
-                if not self.path or len(self.path) < 5:
+                # Tutaj rzadko zmieniamy cel, więc liczymy tylko jak nie mamy ścieżki
+                if not self.path or len(self.path) < 2:
                     self.calculate_path(self.strategic_target)
             
             if self.path: 
@@ -198,6 +265,14 @@ class MilitaryAgent(mesa.Agent):
                 current_pos = self.get_pos_tuple()
                 if self.distance_to_pos(current_pos, self.strategic_target) < 3:
                     # Nowy losowy cel w centrum mapy
+                    safe_margin = min(20, self.model.grid.width // 4)
+                    center_y = self.model.grid.height // 2
+                    self.strategic_target = (
+                        random.randint(safe_margin, self.model.grid.width - safe_margin),
+                        max(10, min(center_y + random.randint(-10, 10), self.model.grid.height - 10))
+                    )
+                    # Wymuś przeliczenie w następnym kroku
+                    self.path = []
                     safe_margin = min(20, self.model.grid.width // 4)
                     center_y = self.model.grid.height // 2
                     self.strategic_target = (

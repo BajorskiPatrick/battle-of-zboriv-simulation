@@ -47,12 +47,12 @@ class BattleOfZborowModel(mesa.Model):
 
             # --- KOZACY I TATARZY ---
             "Piechota Kozacka": {
-                "hp": 95, "morale": 120, "range": 6, "damage": 11, "speed": 1,
+                "hp": 95, "morale": 120, "range": 2, "damage": 11, "speed": 1,
                 "description": "Wysoka determinacja, szybsze ładowanie.",
                 "sprite_path": "assets/sprites/cossack_infantry.png"
             },
             "Jazda Tatarska": {
-                "hp": 75, "morale": 75, "range": 8, "damage": 8, "speed": 6,
+                "hp": 75, "morale": 75, "range": 5, "damage": 8, "speed": 6,
                 "description": "Najwyższa mobilność i szybkostrzelność, niezawodna w deszczu.",
                 "sprite_path": "assets/sprites/cossack_cavalry.png"
             }
