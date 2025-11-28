@@ -79,6 +79,42 @@ class BattleOfZborowModel(mesa.Model):
         
         return costs.tolist()
 
+    def find_valid_spawn_position(self, y_min, y_max, max_attempts=75):
+        """Znajdź bezpieczne pole spawnu w zadanym paśmie Y.
+        Unika kafelków o wysokim koszcie (np. rzeki) i zajętych pól.
+        """
+        # Margines boczny, by nie spawnować przy samej krawędzi
+        x_left = 5
+        x_right = max(6, self.width - 5)
+        y_low = max(0, y_min)
+        y_high = min(self.height - 1, y_max)
+
+        for _ in range(max_attempts):
+            x = self.random.randrange(x_left, x_right)
+            y = self.random.randrange(y_low, y_high)
+
+            try:
+                terrain_cost = self.terrain_costs[y][x]
+            except Exception:
+                continue
+
+            # Zakładamy, że koszt >= 5 oznacza wodę/przeszkodę nie do przejścia
+            if terrain_cost is None:
+                continue
+            if terrain_cost >= 5:
+                continue
+
+            # Unikaj stackowania jednostek na starcie
+            if not self.grid.is_cell_empty((x, y)):
+                continue
+
+            return (x, y)
+
+        # Fallback, jeśli nie znaleziono bezpiecznego miejsca
+        return (
+            self.random.randrange(x_left, x_right),
+            self.random.randrange(y_low, y_high)
+        )
 
     def setup_agents(self):
         """ Tworzy i rozmieszcza agentów na mapie w zorganizowanych strefach. """
@@ -95,49 +131,43 @@ class BattleOfZborowModel(mesa.Model):
                 faction = "Kozacy/Tatarzy"
                 # Rozmieszczenie na górze mapy
                 for i in range(count):
-                    x = self.random.randrange(10, self.width - 10)
-                    y = self.random.randrange(1, 15)
+                    pos = self.find_valid_spawn_position(1, 15)
                     agent = MilitaryAgent(self.next_id(), self, faction, unit_type)
-                    self.grid.place_agent(agent, (x, y))
+                    self.grid.place_agent(agent, pos)
                     self.schedule.add(agent)
             else:
                 faction = "Armia Koronna"
                 # Rozmieszczenie na dole mapy
                 for i in range(count):
-                    x = self.random.randrange(10, self.width - 10)
-                    y = self.random.randrange(self.height - 15, self.height - 1)
+                    pos = self.find_valid_spawn_position(self.height - 15, self.height - 1)
                     agent = MilitaryAgent(self.next_id(), self, faction, unit_type)
-                    self.grid.place_agent(agent, (x, y))
+                    self.grid.place_agent(agent, pos)
                     self.schedule.add(agent)
     
     def _setup_default_scenario(self):
         """ Domyślny scenariusz początkowy (używany w trybie desktop). """
         # Armia Koronna (na dole mapy) - 5x Piechota, 3x Jazda
         for i in range(5):
-            x = self.random.randrange(10, self.width - 10)
-            y = self.random.randrange(self.height - 10, self.height - 1)
+            pos = self.find_valid_spawn_position(self.height - 10, self.height - 1)
             agent = MilitaryAgent(self.next_id(), self, "Armia Koronna", "Piechota")
-            self.grid.place_agent(agent, (x, y))
+            self.grid.place_agent(agent, pos)
             self.schedule.add(agent)
         for i in range(3):
-            x = self.random.randrange(5, self.width - 5)
-            y = self.random.randrange(self.height - 15, self.height - 5)
+            pos = self.find_valid_spawn_position(self.height - 15, self.height - 5)
             agent = MilitaryAgent(self.next_id(), self, "Armia Koronna", "Jazda")
-            self.grid.place_agent(agent, (x, y))
+            self.grid.place_agent(agent, pos)
             self.schedule.add(agent)
 
         # Kozacy i Tatarzy (na górze mapy) - 5x Piechota Kozacka, 5x Jazda Tatarska
         for i in range(5):
-            x = self.random.randrange(10, self.width - 10)
-            y = self.random.randrange(1, 10)
+            pos = self.find_valid_spawn_position(1, 10)
             agent = MilitaryAgent(self.next_id(), self, "Kozacy/Tatarzy", "Piechota Kozacka")
-            self.grid.place_agent(agent, (x, y))
+            self.grid.place_agent(agent, pos)
             self.schedule.add(agent)
         for i in range(5):
-            x = self.random.randrange(5, self.width - 5)
-            y = self.random.randrange(1, 15)
+            pos = self.find_valid_spawn_position(1, 15)
             agent = MilitaryAgent(self.next_id(), self, "Kozacy/Tatarzy", "Jazda Tatarska")
-            self.grid.place_agent(agent, (x, y))
+            self.grid.place_agent(agent, pos)
             self.schedule.add(agent)
 
     def step(self):

@@ -1199,5 +1199,92 @@
       "Piechota Kozacka": 32,
       "Pospolite Ruszenie": 3
     }
+  },
+  {
+    "timestamp": "2025-11-28 10:49:36",
+    "scenario_id": "custom",
+    "scenario_name": "Własna Bitwa",
+    "winner": "Armia Koronna",
+    "survivors": 11,
+    "crown_count": 11,
+    "cossack_count": 0,
+    "total_agents": 11,
+    "initial_units": {
+      "Dragonia": 3,
+      "Jazda": 8,
+      "Jazda Tatarska": 1
+    }
+  },
+  {
+    "timestamp": "2025-11-28 10:50:18",
+    "scenario_id": "scenario_2",
+    "scenario_name": "Przewaga Jazdy",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 8,
+    "crown_count": 0,
+    "cossack_count": 8,
+    "total_agents": 8,
+    "initial_units": {
+      "Dragonia": 0,
+      "Jazda": 2,
+      "Jazda Tatarska": 8,
+      "Piechota": 3,
+      "Piechota Kozacka": 3,
+      "Pospolite Ruszenie": 0
+    }
+  },
+  {
+    "timestamp": "2025-11-28 10:58:44",
+    "scenario_id": "scenario_7",
+    "scenario_name": "Scenariusz Rzeczywisty (1649)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 71,
+    "crown_count": 0,
+    "cossack_count": 71,
+    "total_agents": 71,
+    "initial_units": {
+      "Dragonia": 2,
+      "Jazda": 4,
+      "Jazda Tatarska": 44,
+      "Piechota": 3,
+      "Piechota Kozacka": 32,
+      "Pospolite Ruszenie": 3
+    }
+  },
+  {
+    "timestamp": "2025-11-28 11:05:10",
+    "scenario_id": "scenario_7",
+    "scenario_name": "Scenariusz Rzeczywisty (1649)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 72,
+    "crown_count": 0,
+    "cossack_count": 72,
+    "total_agents": 72,
+    "initial_units": {
+      "Dragonia": 2,
+      "Jazda": 4,
+      "Jazda Tatarska": 44,
+      "Piechota": 3,
+      "Piechota Kozacka": 32,
+      "Pospolite Ruszenie": 3
+    }
+  },
+  {
+    "timestamp": "2025-11-28 11:05:10",
+    "scenario_id": "scenario_7",
+    "scenario_name": "Scenariusz Rzeczywisty (1649)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 72,
+    "crown_count": 0,
+    "cossack_count": 72,
+    "total_agents": 72,
+    "initial_units": {
+      "Dragonia": 2,
+      "Jazda": 4,
+      "Jazda Tatarska": 44,
+      "Piechota": 3,
+      "Piechota Kozacka": 32,
+      "Pospolite Ruszenie": 3
+    }
   }
 ]
