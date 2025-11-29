@@ -4203,5 +4203,286 @@
         }
       }
     }
+  },
+  {
+    "timestamp": "2025-11-30 00:03:44",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 18,
+    "crown_count": 0,
+    "cossack_count": 18,
+    "total_agents": 18,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-11-30 00:03:44",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 18,
+    "crown_count": 0,
+    "cossack_count": 18,
+    "total_agents": 18,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-11-30 00:04:38",
+    "scenario_id": "scenario_2",
+    "scenario_name": "Dzień 2: Obrona Wałów (16 VIII)",
+    "winner": "Armia Koronna",
+    "survivors": 3,
+    "crown_count": 3,
+    "cossack_count": 0,
+    "total_agents": 3,
+    "initial_units": {
+      "Artyleria Koronna": 3,
+      "Artyleria Kozacka": 3,
+      "Czeladz Obozowa": 0,
+      "Czern": 12,
+      "Dragonia": 6,
+      "Husaria": 3,
+      "Jazda Kozacka": 0,
+      "Jazda Tatarska": 5,
+      "Pancerni": 0,
+      "Piechota Kozacka": 18,
+      "Piechota Niemiecka": 10,
+      "Pospolite Ruszenie": 0,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Artyleria Koronna": {
+          "x": [
+            115,
+            130
+          ],
+          "y": [
+            20,
+            80
+          ]
+        },
+        "Artyleria Kozacka": {
+          "x": [
+            40,
+            60
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Czern": {
+          "x": [
+            50,
+            80
+          ],
+          "y": [
+            20,
+            80
+          ]
+        },
+        "Dragonia": {
+          "x": [
+            120,
+            140
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Husaria": {
+          "x": [
+            130,
+            150
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            30,
+            50
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Piechota Kozacka": {
+          "x": [
+            60,
+            95
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Piechota Niemiecka": {
+          "x": [
+            110,
+            125
+          ],
+          "y": [
+            15,
+            85
+          ]
+        }
+      }
+    }
   }
 ]

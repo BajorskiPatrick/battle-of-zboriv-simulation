@@ -8,6 +8,10 @@ let initialUnitsConfig = null;
 let canvas = document.getElementById('simulationCanvas');
 let ctx = canvas.getContext('2d');
 
+// Tooltip variables
+let currentAgents = [];
+let tooltip = null;
+
 // Cache dla załadowanych obrazków sprite'ów
 let spriteCache = {};
 
@@ -752,6 +756,9 @@ function renderSimulation(data) {
     const tileSize = 16;
     const scale = 2;
     
+    // Update current agents for tooltip
+    currentAgents = data.agents || [];
+
     // Ustaw rozmiar canvas
     canvas.width = data.map_width * tileSize * scale;
     canvas.height = data.map_height * tileSize * scale;
@@ -992,3 +999,119 @@ function updateStatus(status, text) {
 // Inicjalizacja
 loadUnitTypes();
 loadScenarios();
+
+// --- TOOLTIP LOGIC ---
+
+function setupTooltip() {
+    tooltip = document.createElement('div');
+    tooltip.id = 'agent-tooltip';
+    tooltip.style.position = 'absolute';
+    tooltip.style.display = 'none';
+    tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '10px';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.fontSize = '13px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.zIndex = '10000';
+    tooltip.style.whiteSpace = 'pre-line';
+    tooltip.style.border = '1px solid #555';
+    tooltip.style.boxShadow = '0 4px 8px rgba(0,0,0,0.5)';
+    tooltip.style.minWidth = '150px';
+    document.body.appendChild(tooltip);
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseout', () => {
+        if (tooltip) tooltip.style.display = 'none';
+    });
+}
+
+function handleMouseMove(e) {
+    if (!currentAgents || currentAgents.length === 0) return;
+    if (!tooltip) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    const tileSize = 16;
+    const scale = 2;
+    const spriteSize = tileSize * scale * 2.5;
+
+    let found = false;
+    
+    // Iterate to find agent under mouse
+    for (let i = currentAgents.length - 1; i >= 0; i--) {
+        const agent = currentAgents[i];
+        const x = (agent.x + 0.5) * tileSize * scale;
+        const y = (agent.y + 0.5) * tileSize * scale;
+        
+        // Check collision with sprite box
+        if (mouseX >= x - spriteSize / 2 && mouseX <= x + spriteSize / 2 &&
+            mouseY >= y - spriteSize / 2 && mouseY <= y + spriteSize / 2) {
+            
+            showTooltip(e.clientX, e.clientY, agent);
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        tooltip.style.display = 'none';
+    }
+}
+
+function showTooltip(screenX, screenY, agent) {
+    tooltip.style.display = 'block';
+    
+    // Position tooltip near mouse but keep it on screen
+    let left = screenX + 15;
+    let top = screenY + 15;
+    
+    // Simple boundary check (optional, but good for UX)
+    if (left + 200 > window.innerWidth) left = screenX - 215;
+    if (top + 150 > window.innerHeight) top = screenY - 165;
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    
+    const factionColor = agent.faction === 'Armia Koronna' ? '#ff6b6b' : '#64b5f6';
+    const stateMap = {
+        'IDLE': 'Bezczynny',
+        'MOVING': 'Ruch',
+        'ATTACKING': 'Walka',
+        'FLEEING': 'Ucieczka',
+        'MOVING_TO_STRATEGIC': 'Ruch Strategiczny'
+    };
+    const stateText = stateMap[agent.state] || agent.state;
+    
+    tooltip.innerHTML = `
+        <div style="border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 5px;">
+            <strong style="color: ${factionColor}; font-size: 1.1em;">${agent.unit_type}</strong>
+            <div style="font-size: 0.85em; color: #aaa;">${agent.faction}</div>
+        </div>
+        <div style="display: grid; grid-template-columns: auto auto; gap: 5px 15px;">
+            <span style="color: #ccc;">HP:</span> 
+            <span style="color: ${getHpColor(agent.hp, agent.max_hp)}">${Math.round(agent.hp)}/${agent.max_hp}</span>
+            
+            <span style="color: #ccc;">Morale:</span>
+            <span style="color: #0cc">${Math.round(agent.morale)}/${agent.max_morale}</span>
+            
+            <span style="color: #ccc;">Stan:</span>
+            <span style="color: #fff">${stateText}</span>
+        </div>
+    `;
+}
+
+function getHpColor(current, max) {
+    const pct = current / max;
+    if (pct > 0.6) return '#4caf50';
+    if (pct > 0.3) return '#ff9800';
+    return '#f44336';
+}
+
+// Initialize tooltip
+setupTooltip();
