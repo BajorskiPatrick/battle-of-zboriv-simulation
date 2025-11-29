@@ -55,22 +55,27 @@ def get_battle_results():
 @app.route('/api/unit-types', methods=['GET'])
 def get_unit_types():
     """Zwraca dostępne typy jednostek z parametrami"""
+    # Inicjalizujemy model tylko po to, by pobrać parametry
     model = BattleOfZborowModel(MAP_PATH, {})
+    
+    # Lista jednostek kozackich do poprawnego przypisania frakcji
+    cossack_units_list = ["Jazda Tatarska", "Piechota Kozacka", "Czern", "Jazda Kozacka", "Artyleria Kozacka"]
     
     unit_types = {}
     for unit_name, params in model.unit_params.items():
-        # Określ frakcję na podstawie nazwy jednostki
-        if "Kozacka" in unit_name or "Tatarska" in unit_name:
+        # Określ frakcję na podstawie listy lub nazwy
+        if unit_name in cossack_units_list or "Kozacka" in unit_name or "Tatarska" in unit_name:
             faction = "Kozacy/Tatarzy"
         else:
             faction = "Armia Koronna"
-        print(unit_name, faction)
+            
         unit_types[unit_name] = {
             "faction": faction,
             "hp": params["hp"],
             "morale": params["morale"],
+            "discipline": params.get("discipline", 50), # Dodajemy nowe pole do API
             "range": params["range"],
-            "damage": params["damage"],
+            "damage": params.get("melee_damage", 0), # Wyświetlamy melee jako główne
             "speed": params["speed"],
             "description": params["description"],
             "sprite_path": params["sprite_path"]
@@ -80,96 +85,208 @@ def get_unit_types():
 
 @app.route('/api/scenarios', methods=['GET'])
 def get_scenarios():
-    """Zwraca predefiniowane scenariusze bitwy"""
-    units = ["Piechota", "Jazda", "Piechota Kozacka", "Jazda Tatarska", "Dragonia", "Pospolite Ruszenie"]
+    """Zwraca predefiniowane scenariusze bitwy z nowymi jednostkami"""
+    
+    # Lista wszystkich możliwych jednostek
+    all_units = [
+        "Husaria", "Pancerni", "Rajtaria", "Dragonia", "Piechota Niemiecka", 
+        "Pospolite Ruszenie", "Czeladz Obozowa", "Artyleria Koronna",
+        "Jazda Tatarska", "Piechota Kozacka", "Czern", "Jazda Kozacka", "Artyleria Kozacka"
+    ]
+
     scenarios = {
         "scenario_1": {
             "id": "scenario_1",
-            "name": "Scenariusz Podstawowy",
-            "description": "Zbalansowana bitwa z równą liczbą jednostek",
+            "name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+            "description": "Atak na przeprawę. Wojska koronne (niebieskie) utknęły na mostach i lewym brzegu. Tatarzy atakują z lasów po lewej.",
             "units": {
-                "Piechota": 5,
-                "Jazda": 3,
-                "Piechota Kozacka": 5,
-                "Jazda Tatarska": 5
+                # --- Armia Koronna (Utknięta na przeprawie) ---
+                "Pospolite Ruszenie": 10, # Panika na brzegu
+                "Czeladz Obozowa": 6,     # Tabory blokujące mosty
+                "Pancerni": 4,            # Osłona
+                "Husaria": 2,             # Próba kontrataku
+                
+                # --- Atakujący (Tatarzy z lewej strony mapy) ---
+                "Jazda Tatarska": 16,     # Szybki atak z lasu
+                "Jazda Kozacka": 4,       # Wsparcie
+
+                "_deployment": {
+                    # Polacy stłoczeni przy rzece i mostach (X: 30-60)
+                    "Czeladz Obozowa": {"x": [35, 55], "y": [30, 70]}, # Na mostach
+                    "Pospolite Ruszenie": {"x": [25, 45], "y": [20, 80]}, # Przed mostami (lewy brzeg)
+                    "Pancerni": {"x": [45, 60], "y": [10, 90]},           # Już przeprawieni (prawy brzeg)
+                    "Husaria": {"x": [50, 65], "y": [40, 60]},            
+                    
+                    # Tatarzy wyłaniają się z lewej krawędzi mapy
+                    "Jazda Tatarska": {"x": [2, 20], "y": [10, 90]},
+                    "Jazda Kozacka": {"x": [2, 15], "y": [40, 60]}
+                }
             }
         },
         "scenario_2": {
             "id": "scenario_2",
-            "name": "Przewaga Jazdy",
-            "description": "Kozacy wykorzystują mobilność jazdy tatarskiej",
+            "name": "Dzień 2: Obrona Wałów (16 VIII)",
+            "description": "Główna faza bitwy. Polacy obsadzają fortyfikacje po prawej stronie mapy. Kozacy szturmują przez przedpole.",
             "units": {
-                "Piechota": 3,
-                "Jazda": 2,
-                "Piechota Kozacka": 3,
-                "Jazda Tatarska": 8
+                # --- Obrońcy (Za murami/wałami po prawej) ---
+                "Piechota Niemiecka": 10, # Na wałach
+                "Dragonia": 6,            # Mobilna obrona luk
+                "Artyleria Koronna": 3,   # W bastionach
+                "Husaria": 3,             # Odwód wewnątrz miasta
+                
+                # --- Atakujący (Szturm ze środka mapy) ---
+                "Piechota Kozacka": 18,   # Główna siła
+                "Czern": 12,              # Mięso armatnie
+                "Artyleria Kozacka": 3,   # Ostrzał wałów
+                "Jazda Tatarska": 5,      # Czeka na tyłach
+
+                "_deployment": {
+                    # Polacy w fortyfikacjach (Prawa strona, X > 110)
+                    "Piechota Niemiecka": {"x": [110, 125], "y": [15, 85]}, # Pierwsza linia wałów
+                    "Artyleria Koronna": {"x": [115, 130], "y": [20, 80]},  # Bastiony
+                    "Dragonia": {"x": [120, 140], "y": [10, 90]},           # Wewnątrz
+                    "Husaria": {"x": [130, 150], "y": [40, 60]},            # Centrum miasta
+                    
+                    # Kozacy na otwartym polu (Środek mapy, X: 50-90)
+                    "Piechota Kozacka": {"x": [60, 95], "y": [10, 90]},
+                    "Czern": {"x": [50, 80], "y": [20, 80]},
+                    "Artyleria Kozacka": {"x": [40, 60], "y": [30, 70]},
+                    "Jazda Tatarska": {"x": [30, 50], "y": [10, 90]} # Za rzeką/na mostach
+                }
             }
         },
         "scenario_3": {
             "id": "scenario_3",
-            "name": "Szturm Piechoty",
-            "description": "Obfite siły piechoty po obu stronach",
+            "name": "Kryzys: Kontratak Czeladzi",
+            "description": "Krytyczny moment. Wróg wdarł się do miasta (prawa strona). Czeladź broni centrum obozu.",
             "units": {
-                "Piechota": 8,
-                "Dragonia": 4,
-                "Piechota Kozacka": 10,
-                "Jazda Tatarska": 2
+                # --- Obrońcy (Wciśnięci głęboko w miasto) ---
+                "Czeladz Obozowa": 20,   
+                "Dragonia": 4,           
+                "Pospolite Ruszenie": 2, 
+                
+                # --- Atakujący (Już wewnątrz fortyfikacji) ---
+                "Piechota Kozacka": 12,   
+                "Jazda Kozacka": 4,
+
+                "_deployment": {
+                    # Polacy w samym centrum miasta (X: 130-155)
+                    "Czeladz Obozowa": {"x": [135, 155], "y": [30, 70]}, 
+                    "Dragonia": {"x": [130, 145], "y": [20, 80]},
+                    
+                    # Wróg przełamał wały (X: 110-125)
+                    "Piechota Kozacka": {"x": [110, 130], "y": [15, 85]},
+                    "Jazda Kozacka": {"x": [100, 120], "y": [40, 60]}
+                }
             }
         },
         "scenario_4": {
             "id": "scenario_4",
-            "name": "Armia Koronna Dominuje",
-            "description": "Przewaga liczebna po stronie Koronnej",
+            "name": "Hipotetyczne: Bitwa na Przedpolu",
+            "description": "Jan Kazimierz wyprowadza wojska przed wały (na środek mapy), by wydać bitwę w polu.",
             "units": {
-                "Piechota": 10,
-                "Jazda": 6,
+                "Piechota Niemiecka": 8,
+                "Husaria": 6,            
+                "Pancerni": 8,
                 "Dragonia": 4,
-                "Piechota Kozacka": 4,
-                "Jazda Tatarska": 3
+                "Piechota Kozacka": 12,
+                "Jazda Tatarska": 12,
+                "Jazda Kozacka": 8,
+                "_deployment": {
+                    # Polacy na środku mapy (przed wałami)
+                    "Piechota Niemiecka": {"x": [90, 105], "y": [20, 80]}, 
+                    "Husaria": {"x": [100, 110], "y": [30, 70]},            
+                    "Pancerni": {"x": [90, 105], "y": [10, 90]},            
+                    
+                    # Wróg atakuje od rzeki
+                    "Piechota Kozacka": {"x": [50, 70], "y": [20, 80]},
+                    "Jazda Kozacka": {"x": [40, 60], "y": [10, 90]},
+                    "Jazda Tatarska": {"x": [30, 50], "y": [5, 95]}
+                }
             }
         },
         "scenario_5": {
             "id": "scenario_5",
-            "name": "Mała Potyczka",
-            "description": "Szybka bitwa z mniejszą liczbą jednostek",
+            "name": "Potyczka nad Rzeką (Zwiad)",
+            "description": "Walka podjazdowa o kontrolę nad mostami na rzece Strypie.",
             "units": {
-                "Piechota": 3,
-                "Jazda": 2,
-                "Piechota Kozacka": 3,
-                "Jazda Tatarska": 2
+                "Pancerni": 5,
+                "Dragonia": 2,
+                "Jazda Tatarska": 5,
+                "Jazda Kozacka": 3,
+                "_deployment": {
+                    # Polacy bronią mostów (Prawy brzeg)
+                    "Pancerni": {"x": [50, 60], "y": [30, 70]},
+                    "Dragonia": {"x": [55, 65], "y": [40, 60]},
+                    
+                    # Tatarzy próbują sforsować rzekę (Lewy brzeg)
+                    "Jazda Tatarska": {"x": [20, 35], "y": [20, 80]},
+                    "Jazda Kozacka": {"x": [25, 40], "y": [40, 60]}
+                }
             }
         },
         "scenario_6": {
             "id": "scenario_6",
-            "name": "Wielka Bitwa",
-            "description": "Masywne starcie z dużą liczbą jednostek",
+            "name": "Szarża Husarii z Obozu",
+            "description": "Wycieczka Husarii zza wałów przeciwko oblegającym wojskom.",
             "units": {
-                "Piechota": 12,
-                "Jazda": 8,
-                "Dragonia": 6,
-                "Pospolite Ruszenie": 4,
-                "Piechota Kozacka": 12,
-                "Jazda Tatarska": 10
+                "Husaria": 10,
+                "Pancerni": 4,
+                "Piechota Kozacka": 10,
+                "Czern": 15,
+                "Jazda Tatarska": 5,
+                "_deployment": {
+                    # Polacy startują z miasta/bram (Prawa strona)
+                    "Husaria": {"x": [110, 125], "y": [10, 90]}, # Rozpędzona linia
+                    "Pancerni": {"x": [120, 130], "y": [20, 80]},
+                    
+                    # Wróg na przedpolu (Środek)
+                    "Czern": {"x": [70, 90], "y": [10, 90]},
+                    "Piechota Kozacka": {"x": [60, 80], "y": [20, 80]}, 
+                    "Jazda Tatarska": {"x": [40, 60], "y": [5, 95]}
+                }
             }
         },
         "scenario_7": {
             "id": "scenario_7",
-            "name": "Scenariusz Rzeczywisty (1649)",
-            "description": "Oparte na historycznych danych z Bitwy pod Zborowem (W. Kucharski) - Armia Koronna ~15 000, Kozacy ~40 000, Tatarzy 50-60 000. Dokładny stosunek 1:6.3",
+            "name": "Rzeczywisty: Pełne Oblężenie",
+            "description": "Historyczna dysproporcja sił (1:4). Polacy zamknięci w fortyfikacjach (prawo), wróg zalewa całą mapę.",
             "units": {
-                "Piechota": 3,
-                "Jazda": 4,
-                "Dragonia": 2,
-                "Pospolite Ruszenie": 3,
-                "Piechota Kozacka": 32,
-                "Jazda Tatarska": 44
+                "Piechota Niemiecka": 6,
+                "Dragonia": 4,
+                "Husaria": 2,
+                "Pospolite Ruszenie": 6,
+                "Artyleria Koronna": 2,
+                
+                # Ogromna przewaga wroga
+                "Piechota Kozacka": 25,
+                "Czern": 20,
+                "Jazda Tatarska": 15,
+                "Artyleria Kozacka": 4,
+                "_deployment": {
+                    # Polacy: tylko wewnątrz murów (Prawa krawędź)
+                    "Piechota Niemiecka": {"x": [115, 130], "y": [15, 85]},
+                    "Artyleria Koronna": {"x": [120, 135], "y": [25, 75]},
+                    "Dragonia": {"x": [125, 145], "y": [10, 90]},
+                    "Husaria": {"x": [140, 155], "y": [40, 60]},
+                    "Pospolite Ruszenie": {"x": [135, 155], "y": [10, 90]},
+                    
+                    # Wróg: Od rzeki aż pod mury
+                    "Piechota Kozacka": {"x": [50, 100], "y": [5, 95]}, # Podchodzą pod mury
+                    "Czern": {"x": [40, 80], "y": [10, 90]},
+                    "Jazda Tatarska": {"x": [5, 60], "y": [0, 100]},   # Panują na polu
+                    "Artyleria Kozacka": {"x": [30, 50], "y": [20, 80]}
+                }
             }
         }
     }
-    for scenario in scenarios:
-        for unit in units:
-            if unit not in scenarios[scenario]["units"]:
-                scenarios[scenario]["units"][unit] = 0
+    
+    # Uzupełnij zerami brakujące jednostki (dla bezpieczeństwa frontendu)
+    for scenario in scenarios.values():
+        for unit in all_units:
+            if unit not in scenario["units"]:
+                scenario["units"][unit] = 0
+                
     return jsonify(scenarios)
 
 @app.route('/api/map-data', methods=['GET'])
@@ -296,19 +413,31 @@ def get_map_data():
 
 @app.route('/api/start-simulation', methods=['POST'])
 def start_simulation():
-    """Rozpoczyna nową symulację z podaną konfiguracją jednostek"""
+    """Rozpoczyna nową symulację z uwzględnieniem pogody."""
     global simulation, simulation_running, current_scenario_id
     
     data = request.json
-    config = data.get('units_config', {})
     scenario_id = data.get('scenario_id', None)
+    weather = data.get('weather', 'clear')  # Odbieramy pogodę, domyślnie czysto
     
-    print(f"Otrzymana konfiguracja: {config}")
-    print(f"Scenariusz ID: {scenario_id}")
+    all_scenarios_response = get_scenarios() 
+    all_scenarios = all_scenarios_response.json
+    
+    final_config = {}
+    
+    if scenario_id == 'custom':
+        final_config = data.get('units_config', {})
+    else:
+        if scenario_id in all_scenarios:
+            final_config = all_scenarios[scenario_id]['units']
+        else:
+            final_config = data.get('units_config', {})
+
+    print(f"Start scenariusza: {scenario_id}, Pogoda: {weather}")
     
     with simulation_lock:
-        # Stwórz nowy model z konfiguracją
-        simulation = BattleOfZborowModel(MAP_PATH, config)
+        # Przekazujemy pogodę do konstruktora
+        simulation = BattleOfZborowModel(MAP_PATH, final_config, weather=weather)
         simulation_running = True
         current_scenario_id = scenario_id
     

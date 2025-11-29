@@ -276,31 +276,39 @@ function renderScenarios() {
     grid.innerHTML = '';
     console.log(scenarios);
 
-    let armyCoronaUnits = ["Dragonia", "Jazda", "Piechota", "Pospolite Ruszenie"];
-    let armyCossackUnits = ["Piechota Kozacka", "Jazda Tatarska"];
+    let armyCoronaUnits = [
+        "Husaria", "Pancerni", "Rajtaria", "Dragonia", 
+        "Piechota Niemiecka", "Pospolite Ruszenie", 
+        "Czeladz Obozowa", "Artyleria Koronna"
+    ];
+    let armyCossackUnits = [
+        "Jazda Tatarska", "Piechota Kozacka", "Czern", 
+        "Jazda Kozacka", "Artyleria Kozacka"
+    ];
+
     for (const [scenarioId, scenario] of Object.entries(scenarios)) {
         const card = document.createElement('div');
         card.className = 'scenario-card';
         card.onclick = () => selectScenario(scenarioId);
         
-        // Grupuj jednostki według frakcji
         const crownUnits = [];
         const cossackUnits = [];
         let totalCrown = 0;
         let totalCossack = 0;
         
         for (const [unitName, count] of Object.entries(scenario.units)) {
+            // --- POPRAWKA: Ignoruj klucze konfiguracyjne (zaczynające się od _) ---
+            if (unitName.startsWith('_')) continue;
             
-            
-            
-            if (armyCoronaUnits.includes(unitName)) {
-                crownUnits.push({ name: unitName, count });
-                totalCrown += count;
-            } else {
-                cossackUnits.push({ name: unitName, count });
-                totalCossack += count;
+            if (count > 0) {
+                if (armyCoronaUnits.includes(unitName)) {
+                    crownUnits.push({ name: unitName, count });
+                    totalCrown += count;
+                } else {
+                    cossackUnits.push({ name: unitName, count });
+                    totalCossack += count;
+                }
             }
-            
         }
         
         let unitsHTML = '';
@@ -312,8 +320,8 @@ function renderScenarios() {
                     <div class="scenario-unit-row">
                         <span class="scenario-unit-name">${unit.name}</span>
                         <span class="scenario-unit-count">${unit.count}</span>
-            </div>
-        `;
+                    </div>
+                `;
             });
         }
         
@@ -331,7 +339,6 @@ function renderScenarios() {
         
         const totalUnits = totalCrown + totalCossack;
         
-        // Dodaj podsumowanie sił
         let forcesSummary = '';
         if (totalCrown > 0 || totalCossack > 0) {
             forcesSummary = `
@@ -370,7 +377,10 @@ async function selectScenario(scenarioId) {
     const scenario = scenarios[scenarioId];
     if (!scenario) return;
     
-    console.log('Wybrano scenariusz:', scenario.name);
+    const weatherSelect = document.getElementById('scenarioWeatherSelect');
+    const weather = weatherSelect ? weatherSelect.value : 'clear';
+    
+    console.log('Wybrano scenariusz:', scenario.name, 'Pogoda:', weather);
     
     // Zapisz informacje o scenariuszu
     currentScenarioId = scenarioId;
@@ -387,7 +397,8 @@ async function selectScenario(scenarioId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 units_config: scenario.units,
-                scenario_id: scenarioId
+                scenario_id: scenarioId,
+                weather: weather // <-- Przekazujemy pogodę
             })
         });
         

@@ -40,6 +40,15 @@
                     <button class="btn btn-start" onclick="showCustomBattle()" style="margin-bottom: 25px; background: linear-gradient(45deg, #4a148c, #7b1fa2); width: 100%; padding: 15px; font-size: 1.1em;">
                         🛠️ Stwórz Własną Bitwę (Custom)
                     </button>
+                    
+                    <div class="weather-selector-container" style="margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; border: 1px solid #444;">
+                        <label style="color: #ccc; font-weight: 500; margin-right: 10px;">Warunki pogodowe:</label>
+                        <select id="scenarioWeatherSelect" style="background: #222; color: #fff; border: 1px solid #555; padding: 6px 12px; border-radius: 4px; font-size: 1em;">
+                            <option value="clear">☀️ Normalne (Słonecznie)</option>
+                            <option value="rain">🌧️ Deszcz (Błoto, mokry proch)</option>
+                            <option value="fog">🌫️ Mgła (Ograniczona widoczność)</option>
+                        </select>
+                    </div>
 
                     <div class="scenarios-grid" id="scenariosGrid"></div>
                     <div class="loader" id="loader"></div>
@@ -59,6 +68,15 @@
 
                     <!-- Środkowy Panel: Info i Start -->
                     <div class="panel center-panel">
+                        <div class="weather-control" style="margin-bottom: 20px; width: 80%;">
+                            <label style="color: #aaa; display: block; margin-bottom: 8px;">Warunki pogodowe:</label>
+                            <select id="customWeatherSelect" class="filter-select" style="width: 100%; background: #333; color: white; border: 1px solid #555; padding: 10px; border-radius: 4px;">
+                                <option value="clear">☀️ Normalne (Słonecznie)</option>
+                                <option value="rain">🌧️ Deszcz (Błoto, mokry proch)</option>
+                                <option value="fog">🌫️ Mgła (Ograniczona widoczność)</option>
+                            </select>
+                        </div>
+
                         <h2 style="margin-bottom: 10px;">Konfiguracja Bitwy</h2>
                         <p style="color: #aaa;">Ustaw liczebność wojsk po obu stronach.</p>
                         
