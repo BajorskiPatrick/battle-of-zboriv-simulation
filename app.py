@@ -20,7 +20,7 @@ simulation_lock = threading.Lock()
 simulation_running = False
 current_scenario_id = None  # ID aktualnie uruchomionego scenariusza
 
-MAP_PATH = "assets/map/nowa_Mapa.tmx"
+MAP_PATH = "assets/map/map.tmx"
 RESULTS_FILE = "battle_results.json"
 
 @app.route('/')
@@ -382,7 +382,7 @@ def get_map_data():
                 print(f"Warning: Error extracting tileset image path: {img_err}")
 
             # Jeśli to nowa mapa, wymuś poprawny tileset (ponieważ .tsx może mieszać ścieżki)
-            if "nowa_Mapa" in MAP_PATH:
+            if "map" in MAP_PATH:
                 tileset_image_path = "assets/map/tileset_legacy.png"
 
             tileset_columns = tileset.columns if hasattr(tileset, 'columns') else 32

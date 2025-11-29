@@ -116,8 +116,8 @@ class WebRenderer:
             
             # Oblicz pozycję kafelka w tileset image
             # Tileset ma spacing=1, więc każdy kafelek to 16px + 1px odstępu
-            columns = 32  # Z kafelki_nowe.tsx: columns="32"
-            spacing = 1   # Z kafelki_nowe.tsx: spacing="1"
+            columns = 32  # Z tileset_properties.tsx: columns="32"
+            spacing = 1   # Z tileset_propertiese.tsx: spacing="1"
             
             # Pozycja z uwzględnieniem spacing
             col = tile_id % columns

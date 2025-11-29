@@ -1,182 +1,125 @@
 # Symulacja Agentowa: Bitwa pod Zborowem (1649)
 
-## 1. Wprowadzenie
+Projekt ten jest zaawansowaną symulacją agentową historycznej Bitwy pod Zborowem (1649). Wykorzystuje paradygmat modelowania agentowego (ABM) do odwzorowania zachowań poszczególnych oddziałów wojskowych, ich interakcji oraz wpływu terenu i pogody na przebieg starcia.
 
-Projekt ten jest agentową symulacją historycznej Bitwy pod Zborowem, która odbyła się w dniach 15-16 sierpnia 1649 roku. Jest to implementacja założeń z dokumentu "Szczegółowy opis projektu", wykorzystująca dane ze źródeł historycznych (m.in. prace W. Kucharskiego i A. Mandzy'ego) do modelowania dynamiki starcia w paradygmacie systemów dyskretnych.
+## 1. Charakterystyka Jednostek
 
-Celem projektu jest nie tylko wizualizacja przebiegu bitwy, ale również stworzenie narzędzia do analizy "co by było gdyby", pozwalającego badać wpływ kluczowych czynników (morale, teren, pogoda, skuteczność uzbrojenia) na ostateczny wynik starcia.
+W symulacji zaimplementowano szereg historycznych typów jednostek, z których każda posiada unikalny zestaw cech wpływających na jej skuteczność bojową.
 
-### ✨ Nowe! Interfejs Webowy
+### Parametry Jednostek
+Każdy agent (oddział) opisany jest przez następujące zmienne:
+*   **HP (Punkty Życia):** Wytrzymałość oddziału. Spadek do 0 oznacza zniszczenie.
+*   **Morale:** Wola walki. Niskie morale prowadzi do paniki i ucieczki.
+*   **Dyscyplina:** Odporność na spadki morale i szansa na opanowanie paniki.
+*   **Atak Wręcz / Dystansowy:** Siła zadawanych obrażeń.
+*   **Zasięg:** Odległość, z jakiej jednostka może atakować.
+*   **Amunicja:** Liczba strzałów dla jednostek dystansowych.
+*   **Obrona:** Redukcja otrzymywanych obrażeń.
+*   **Szybkość:** Bazowa prędkość poruszania się.
 
-**Projekt został rozszerzony o pełnoprawny interfejs webowy!**
+### Typy Jednostek
 
-🌐 **Możliwości:**
-- **Konfiguracja jednostek** - wybierz liczbę jednostek każdego typu przed rozpoczęciem bitwy
-- **Symulacja w przeglądarce** - obserwuj bitwę w czasie rzeczywistym
-- **Interaktywna legenda** - ikony i parametry wszystkich jednostek
-- **Statystyki na żywo** - liczba żołnierzy każdej strony
+#### Armia Koronna
+| Jednostka | Rola | Cechy Szczególne |
+|-----------|------|------------------|
+| **Husaria** | Ciężka jazda przełamująca | Ogromne morale i dyscyplina, bonus do szarży, wysoka obrona. |
+| **Pancerni** | Jazda uniwersalna | Dobry balans między mobilnością a siłą uderzenia. |
+| **Rajtaria** | Jazda z bronią palną | Posiada broń palną (krótki zasięg), solidna w zwarciu. |
+| **Dragonia** | Piechota konna | Mobilni strzelcy, walczą dystansowo. |
+| **Piechota Niemiecka** | Elitarna piechota | Bardzo wysoka dyscyplina, silny ogień, powolna. |
+| **Pospolite Ruszenie** | Posiłki | Niska dyscyplina, łatwo wpadają w panikę, słabe uzbrojenie. |
+| **Artyleria Koronna** | Wsparcie ogniowe | Ogromny zasięg i obrażenia, bardzo powolna, bezbronna w zwarciu. |
 
-📖 **Dokumentacja webowa:** [README_WEB.md](README_WEB.md) | [WEB_INTERFACE.md](WEB_INTERFACE.md)
+#### Kozacy i Tatarzy
+| Jednostka | Rola | Cechy Szczególne |
+|-----------|------|------------------|
+| **Jazda Tatarska** | Lekka jazda | Bardzo szybka, atakuje z łuków, unika zwarcia. |
+| **Piechota Kozacka** | Strzelcy wyborowi | Wysokie obrażenia dystansowe, solidne morale. |
+| **Jazda Kozacka** | Jazda średnia | Przyzwoita w zwarciu, wspiera piechotę. |
+| **Czern** | Pospólstwo | Liczna, ale słaba i tchórzliwa. Mięso armatnie. |
+| **Artyleria Kozacka** | Ostrzał obozu | Mniejsza siła niż koronna, ale wciąż groźna. |
 
-### Demo
+---
 
+## 2. Mechanika Symulacji i Działanie Agentów
 
-## 2. Zastosowane Technologie
+Sercem symulacji jest cykl decyzyjny agenta (`step`), który wykonuje się w każdej turze dla każdego oddziału.
 
-Symulacja została zbudowana w oparciu o profesjonalny i nowoczesny stack technologiczny w ekosystemie Pythona, z wyraźnym oddzieleniem logiki od wizualizacji.
+### Cykl Decyzyjny Agenta
+1.  **Test Morale i Panika:**
+    *   Jeśli `morale` spadnie poniżej progu paniki (obliczanego jako `25 - (dyscyplina / 5)`), agent wykonuje test dyscypliny.
+    *   Niepowodzenie oznacza przejście w stan **FLEEING** (Ucieczka). Agent ignoruje rozkazy i ucieka najkrótszą drogą do krawędzi mapy.
+2.  **Wykrywanie Wroga:**
+    *   Agent skanuje otoczenie w promieniu wzroku (zależnym od pogody: 20 pól normalnie, 6 we mgle).
+    *   Wybiera najbliższego wroga jako cel.
+3.  **Walka:**
+    *   **Dystansowa:** Jeśli wróg jest w zasięgu i agent ma amunicję.
+        *   Szansa na strzał zależy od pogody (deszcz zwiększa ryzyko niewypału).
+        *   Obrażenia są redukowane przez teren, na którym stoi cel (osłona).
+    *   **Wręcz:** Jeśli wróg jest na sąsiednim polu (dystans <= 1.5).
+        *   Jednostki jazdy (np. Husaria) otrzymują bonus do obrażeń (szarża).
+4.  **Ruch:**
+    *   Jeśli brak wroga w zasięgu wzroku, agent kieruje się ku **Celowi Strategicznemu** (losowy punkt w głębi terytorium wroga).
+    *   Jeśli wróg jest widoczny, ale poza zasięgiem, agent wyznacza ścieżkę do niego.
 
-*   **Język programowania:** Python 3.9+
-*   **Silnik symulacji agentowej:** [**Mesa**](https://mesa.readthedocs.io/en/stable/) - framework dedykowany do modelowania agentowego (ABM), zarządzający harmonogramem, przestrzenią i stanem agentów.
-*   **Silnik wizualizacji 2D:** [**Arcade**](https://api.arcade.academy/) - nowoczesna biblioteka do tworzenia gier i wizualizacji 2D, oferująca wysoką wydajność i wbudowane wsparcie dla map kafelkowych.
-*   **Interfejs webowy:** [**Flask**](https://flask.palletsprojects.com/) - framework do stworzenia REST API i serwowania interfejsu HTML.
-*   **Tworzenie i obsługa mapy:**
-    *   [**Tiled Map Editor**](https://www.mapeditor.org/) - edytor do tworzenia map kafelkowych, w którym zdefiniowano topografię pola bitwy i właściwości terenu.
-    *   [**Pytmx**](https://pytmx.readthedocs.io/en/latest/) - biblioteka do parsowania danych z mapy `.tmx` na potrzeby silnika symulacji.
-*   **Obliczenia:** [**NumPy**](https://numpy.org/) - do wydajnych operacji na siatce kosztów ruchu.
-*   **Pathfinding:** [**Pathfinding**](https://pypi.org/project/pathfinding/) - do znajdowania optymalnych ścieżek dla agentów na mapie.
-*   **Rendering obrazów:** [**Pillow (PIL)**](https://pillow.readthedocs.io/) - generowanie klatek symulacji dla interfejsu webowego.
-
-## 3. Instalacja i Uruchomienie
-
-### Sposób 1: Interfejs Webowy (Zalecany! 🌟)
-
-1.  **Sklonuj repozytorium:**
-    ```bash
-    git clone [URL_TWOJEGO_REPOZYTORIUM]
-    cd battle-of-zboriv-simulation
+### System Obliczeń
+*   **Otrzymywanie Obrażeń:**
+    ```python
+    redukcja = min(obrażenia - 1, losowa(0, obrona // 2))
+    faktyczne_obrażenia = max(1, obrażenia - redukcja)
+    hp -= faktyczne_obrażenia
     ```
+*   **Utrata Morale:**
+    Jest proporcjonalna do otrzymanych obrażeń. Jednostki o wysokiej dyscyplinie (>80) tracą morale wolniej (mnożnik 0.7).
 
-2.  **Stwórz i aktywuj wirtualne środowisko (zalecane):**
-    ```bash
-    python -m venv venv
-    # Windows
-    venv\Scripts\activate
-    # macOS/Linux
-    source venv/bin/activate
-    ```
+### Ruch i Pathfinding
+*   Wykorzystywany jest algorytm **A* (A-Star)** do znajdowania optymalnej ścieżki.
+*   Mapa podzielona jest na kafelki o różnym **koszcie ruchu**:
+    *   Trawa: koszt 1.0
+    *   Las/Wzgórza: koszt > 1.0 (spowalnia)
+    *   Woda/Przeszkody: koszt bardzo wysoki lub nieprzekraczalny.
+*   Szansa na wykonanie ruchu w turze zależy od szybkości jednostki i trudności terenu:
+    `szansa_ruchu = speed / (koszt_terenu * 5.0)`
+    Oznacza to, że ciężkie jednostki mogą "grzęznąć" w trudnym terenie.
 
-3.  **Zainstaluj wymagane biblioteki:**
+### Wpływ Pogody
+Symulacja uwzględnia zmienne warunki atmosferyczne, które globalnie wpływają na rozgrywkę:
+1.  **Deszcz (Rain):**
+    *   **Błoto:** Koszt ruchu na zwykłym terenie drastycznie rośnie (x2.5). Jazda i artyleria stają się bardzo powolne.
+    *   **Mokry Proch:** Obrażenia jednostek strzeleckich (poza łucznikami) spadają o 70%. Zwiększa się szansa na niewypał.
+2.  **Mgła (Fog):**
+    *   Ogranicza zasięg widzenia jednostek z 20 do 6 pól, wymuszając walkę na krótki dystans.
+
+---
+
+## 3. Aspekty Techniczne
+
+Projekt został zrealizowany w języku **Python** z wykorzystaniem nowoczesnych bibliotek do symulacji i wizualizacji.
+
+### Architektura
+*   **Backend (Symulacja):** Oparty na frameworku **Mesa**. Odpowiada za logikę agentów, zarządzanie stanem świata i harmonogramowanie tur.
+*   **Frontend (Wizualizacja):** Interfejs webowy zbudowany we frameworku **Flask**. Komunikuje się z backendem, pobierając stan agentów i renderując go na mapie w przeglądarce.
+
+### Kluczowe Biblioteki
+*   `Mesa`: Silnik symulacji agentowej (Agent-Based Modeling).
+*   `NumPy`: Wydajne operacje macierzowe na siatce terenu (mapa kosztów).
+*   `Pathfinding`: Biblioteka realizująca algorytm A* na siatce nawigacyjnej.
+*   `PyTMX`: Obsługa map stworzonych w edytorze **Tiled** (.tmx). Pozwala na odczytywanie warstw terenu i właściwości kafelków.
+
+### Struktura Plików
+*   `simulation/agent.py`: Logika decyzyjna pojedynczego oddziału.
+*   `simulation/model.py`: Główna klasa symulacji, inicjalizacja mapy i jednostek.
+*   `app.py`: Serwer Flask obsługujący interfejs webowy.
+*   `assets/`: Grafiki jednostek i pliki mapy.
+
+## 4. Uruchomienie
+
+1.  Zainstaluj wymagane biblioteki:
     ```bash
     pip install -r requirements.txt
     ```
-
-4.  **Uruchom serwer webowy:**
+2.  Uruchom aplikację webową:
     ```bash
     python app.py
     ```
-
-5.  **Otwórz przeglądarkę:**
-    ```
-    http://localhost:5000
-    ```
-
-### Sposób 2: Tryb Desktop (Arcade)
-
-Uruchom oryginalną wizualizację desktop:
-```bash
-python main.py
-```
-
-## 4. Struktura Projektu
-
-Projekt ma logiczną, modułową strukturę ułatwiającą rozwój i konserwację.
-
-```
-battle-of-zboriv-simulation/
-├── app.py                         # [NOWE] Serwer Flask z REST API
-├── templates/
-│   └── index.html                 # [NOWE] Interfejs webowy
-├── assets/
-│   ├── map/
-│   │   ├── zborow_battlefield.tmx   # Plik mapy Tiled
-│   │   └── tileset.png            # Zestaw kafelków graficznych
-│   └── sprites/
-│       ├── crown_dragoon.png
-│       ├── crown_cavalry.png
-│       └── ... (grafiki dla wszystkich jednostek)
-├── simulation/
-│   ├── agent.py                 # Definicja klasy Agenta (MilitaryAgent)
-│   ├── model.py                 # Główny model symulacji (BattleOfZborowModel)
-│   └── utils.py                 # Funkcje pomocnicze
-├── visualization/
-│   ├── window.py                # Główne okno aplikacji Arcade
-│   └── sprites.py               # Niestandardowe klasy sprajtów (np. z paskiem zdrowia)
-├── main.py                        # Punkt startowy aplikacji
-├── requirements.txt               # Lista zależności
-└── README.md                      # Ten plik
-```
-
-## 5. Szczegółowy Opis Modelu
-
-Model symulacji został wiernie oparty na dostarczonej specyfikacji.
-
-### 5.1. Środowisko: Pole Bitwy
-
-Mapa została odtworzona w edytorze **Tiled** na podstawie map historycznych z prac W. Kucharskiego i A. Mandzy'ego. Kluczowe elementy topograficzne (rzeka Strypa, bagna, wzgórza) zostały uwzględnione poprzez przypisanie niestandardowych właściwości do kafelków terenu.
-
-| Typ Terenu      | Koszt Ruchu | Bonus do Obrony | Modyfikator Morale | Opis                                           |
-|-----------------|-------------|-----------------|--------------------|------------------------------------------------|
-| **Równina**     | 1.0         | 0%              | 0                  | Domyślny teren, brak modyfikatorów.            |
-| **Las/Zarośla** | 1.8         | 25%             | 0                  | Ogranicza widoczność, zapewnia osłonę.         |
-| **Bagno/Błoto** | 3.0         | -15%            | -5                 | Znacznie spowalnia ruch, negatywnie wpływa na morale. |
-| **Wzgórze**     | 1.5         | 15%             | +5                 | Trudniejszy do pokonania, ale daje bonus w obronie. |
-| **Fortyfikacje**| 2.0         | 50%             | +10                | Wały ziemne, znaczący bonus obronny.           |
-| **Rzeka/Staw**  | ∞ (nieprzekraczalny) | 0%              | 0                  | Bariera naturalna, przekraczalna tylko w brodach. |
-
-Dodatkowo, symulacja uwzględnia **globalne warunki pogodowe** (deszcz), które wpływają na wszystkich agentów poprzez:
-*   Zmniejszenie skuteczności broni palnej (większa szansa na niewypał).
-*   Ograniczenie widoczności.
-*   Negatywny wpływ na morale (jeśli jednostki nie są do tego przyzwyczajone).
-
-### 5.2. Agenci: Jednostki Wojskowe
-
-Każdy agent na mapie reprezentuje oddział wojskowy liczący ok. 50 żołnierzy. Posiada zestaw atrybutów (`zdrowie`, `morale`, `amunicja`, `status`) oraz unikalne cechy wynikające z jego typu.
-
-#### Frakcja: Armia Koronna
-
-| Typ Jednostki      | Uzbrojenie             | Cechy Specjalne                                                              |
-|--------------------|------------------------|------------------------------------------------------------------------------|
-| **Piechota**       | Muszkiet, Pika         | + Wysoka dyscyplina i morale. <br> + Odporność na szarże kawalerii.             |
-| **Dragonia**       | Broń palna             | + Mobilna jednostka, może walczyć pieszo.                                    |
-| **Jazda**          | Szabla, lanca, broń palna| + Wysoka prędkość. <br> + Potężny bonus do szarży (pierwszego ataku).         |
-| **Pospolite Ruszenie**| Mieszane            | - Bardzo niskie morale początkowe. <br> - Wysoka podatność na panikę i ucieczkę. |
-
-#### Frakcja: Kozacy i Tatarzy
-
-| Typ Jednostki        | Uzbrojenie        | Cechy Specjalne                                                                       |
-|----------------------|-------------------|---------------------------------------------------------------------------------------|
-| **Piechota Kozacka** | Samopał (muszkiet)| + Wysoka determinacja (odporność na spadek morale). <br> + Szybsze ładowanie broni.   |
-| **Jazda Tatarska**   | Łuk, szabla       | + Najwyższa szybkostrzelność. <br> + Broń niezawodna w deszczu. <br> + Bardzo mobilna. |
-
-### 5.3. Mechanika i Logika
-
-*   **System Czasu:** Symulacja działa w dyskretnych krokach czasowych (tyknięciach).
-*   **Sztuczna Inteligencja (FSM):** Zachowanie agentów jest sterowane przez prostą maszynę stanów (Finite State Machine):
-    1.  **PATROL / OCZEKIWANIE:** Agent przemieszcza się w stronę wyznaczonego celu lub utrzymuje pozycję.
-    2.  **ATAK:** Po wykryciu wroga w zasięgu, agent przechodzi do stanu ataku.
-    3.  **RUCH DO CELU:** Jeśli wróg jest widoczny, ale poza zasięgiem, agent porusza się w jego kierunku.
-    4.  **UCIECZKA:** Jeśli morale spadnie poniżej krytycznego progu, agent panikuje i wycofuje się z walki w bezpieczne miejsce.
-*   **System Walki:** Wynik starcia jest stochastyczny. Szansa na trafienie zależy od:
-    *   Bazowej celności jednostki.
-    *   Dystansu do celu.
-    *   Osłony, jaką zapewnia teren.
-    *   Warunków pogodowych.
-    Trafienie obniża `zdrowie` (liczebność oddziału) i `morale` celu.
-*   **System Morale:** Kluczowy element symulacji. Morale jednostki zmienia się dynamicznie:
-    *   **Spada:** przy ponoszeniu strat, byciu pod ostrzałem, kontakcie z przytłaczającym wrogiem, złej pogodzie.
-    *   **Rośnie:** przy zadawaniu strat wrogowi, wygrywaniu starć.
-    Drastyczny spadek morale prowadzi do paniki i ucieczki.
-
-## 6. Ograniczenia i Możliwy Dalszy Rozwój
-
-Model jest celowo uproszczony, aby skupić się na kluczowych mechanikach.
-*   **Uproszczenia:** Łańcuch dowodzenia jest pominięty (agenci działają autonomicznie), logistyka jest ograniczona do początkowej amunicji.
-*   **Możliwy rozwój:**
-    *   Implementacja **scenariuszy historycznych** (np. początkowe rozstawienie wojsk z 15 sierpnia).
-    *   Dodanie **łańcucha dowodzenia** (agenci-dowódcy wpływający na morale pobliskich jednostek).
-    *   Rozbudowa systemu **zbierania i analizy danych** (za pomocą `mesa.DataCollector`) w celu badania wrażliwości modelu na parametry.
-    *   Wprowadzenie bardziej zaawansowanych zachowań taktycznych (flankowanie, formacje).
-
----
-Autorzy oryginalnej koncepcji: Patrick Bajorski, Jan Banasik, Gabriel Filipowicz
-Implementacja w Pythonie: [Twoje Imię/Nazwa]
+3.  Otwórz przeglądarkę pod adresem: `http://127.0.0.1:5000`
