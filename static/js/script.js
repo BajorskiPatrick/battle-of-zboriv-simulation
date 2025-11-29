@@ -45,6 +45,12 @@ function showCustomBattle() {
     // Hide other pages
     document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
     document.getElementById('customBattlePage').classList.add('active');
+
+    const navButtons = document.querySelector('.navigation-buttons');
+    if (navButtons) {
+        navButtons.style.display = 'none';
+    }
+    
     hideCustomError();
     
     // Initialize counts if empty
