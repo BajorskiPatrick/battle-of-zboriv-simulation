@@ -143,6 +143,9 @@ function startCustomSimulation() {
 
     hideCustomError();
     
+    const weatherSelect = document.getElementById('customWeatherSelect');
+    const weather = weatherSelect ? weatherSelect.value : 'clear';
+
     // Start simulation via API
     fetch('/api/start-simulation', {
         method: 'POST',
@@ -151,7 +154,8 @@ function startCustomSimulation() {
         },
         body: JSON.stringify({
             units_config: config,
-            scenario_id: 'custom'
+            scenario_id: 'custom',
+            weather: weather
         }),
     })
     .then(response => response.json())
@@ -161,6 +165,9 @@ function startCustomSimulation() {
             currentScenarioName = "Własna Bitwa";
             initialUnitsConfig = config;
             
+            // Ustaw pogodę
+            setWeather(weather);
+
             // Switch to simulation view
             document.querySelector('.main-grid').classList.add('simulation-active');
             document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
@@ -410,6 +417,9 @@ async function selectScenario(scenarioId) {
         console.log('Start result:', result);
         
         if (response.ok) {
+            // Ustaw pogodę
+            setWeather(weather);
+
             // Przełącz widok
             document.querySelector('.main-grid').classList.add('simulation-active');
             document.getElementById('scenariosPage').style.display = 'none';
@@ -751,6 +761,112 @@ function restartSimulation() {
     backToScenarios();
 }
 
+// --- SYSTEM POGODY ---
+let currentWeather = 'clear'; // 'clear', 'rain', 'fog'
+let weatherNeedsInit = false;
+let rainParticles = [];
+let fogParticles = [];
+
+// Inicjalizacja deszczu
+function initRain(width, height) {
+    rainParticles = [];
+    // Zwiększona gęstość deszczu (mniejsza wartość = więcej kropel)
+    const density = 1000; 
+    const count = Math.floor((width * height) / density);
+    
+    console.log(`Inicjalizacja deszczu: ${count} kropel dla obszaru ${width}x${height}`);
+    
+    for (let i = 0; i < count; i++) {
+        rainParticles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            speed: Math.random() * 15 + 10, // Szybszy deszcz
+            length: Math.random() * 15 + 10 // Dłuższe krople
+        });
+    }
+}
+
+// Inicjalizacja mgły
+function initFog(width, height) {
+    fogParticles = [];
+    // Mniej cząsteczek, ale bardzo duże - tworzą "zagęszczenia" mgły
+    const count = 20; 
+    
+    console.log(`Inicjalizacja mgły: ${count} dużych chmur dla obszaru ${width}x${height}`);
+
+    for (let i = 0; i < count; i++) {
+        fogParticles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.2, // Bardzo wolny ruch
+            vy: (Math.random() - 0.5) * 0.2,
+            radius: Math.random() * 200 + 100, // Bardzo duże chmury
+            alpha: Math.random() * 0.1 + 0.05
+        });
+    }
+}
+
+// Rysowanie i aktualizacja deszczu
+function drawRain(ctx, width, height) {
+    if (rainParticles.length === 0) return;
+
+    ctx.strokeStyle = 'rgba(200, 220, 255, 0.8)'; // Bardzo jasny niebieski, prawie biały
+    ctx.lineWidth = 2; // Grubsze linie dla lepszej widoczności
+    ctx.beginPath();
+    
+    for (let p of rainParticles) {
+        // Rysuj linię
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x, p.y + p.length);
+        
+        // Aktualizuj pozycję
+        p.y += p.speed;
+        
+        // Resetuj jak spadnie na dół
+        if (p.y > height) {
+            p.y = -p.length;
+            p.x = Math.random() * width;
+        }
+    }
+    ctx.stroke();
+}
+
+// Rysowanie i aktualizacja mgły
+function drawFog(ctx, width, height) {
+    // 1. Jednolita warstwa bazowa (pokrywa całą mapę)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; 
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Ruchome zagęszczenia
+    for (let p of fogParticles) {
+        ctx.beginPath();
+        // Gradient dla miękkich krawędzi
+        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${p.alpha})`);
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        
+        ctx.fillStyle = gradient;
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Aktualizuj pozycję (dryfowanie)
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        // Zawijanie na krawędziach ekranu (z marginesem na promień)
+        if (p.x < -p.radius) p.x = width + p.radius;
+        if (p.x > width + p.radius) p.x = -p.radius;
+        if (p.y < -p.radius) p.y = height + p.radius;
+        if (p.y > height + p.radius) p.y = -p.radius;
+    }
+}
+
+// Funkcja przełączająca pogodę (do podpięcia pod przyciski)
+window.setWeather = function(type) {
+    currentWeather = type;
+    weatherNeedsInit = true;
+};
+
 // Renderuj symulację na canvas
 function renderSimulation(data) {
     const tileSize = 16;
@@ -762,6 +878,15 @@ function renderSimulation(data) {
     // Ustaw rozmiar canvas
     canvas.width = data.map_width * tileSize * scale;
     canvas.height = data.map_height * tileSize * scale;
+
+    // Inicjalizacja pogody jeśli potrzebna (po ustawieniu rozmiaru canvas)
+    // Dodano sprawdzenie pustych tablic, aby wymusić inicjalizację jeśli coś poszło nie tak
+    if (weatherNeedsInit || (currentWeather === 'rain' && rainParticles.length === 0) || (currentWeather === 'fog' && fogParticles.length === 0)) {
+        if (currentWeather === 'rain') initRain(canvas.width, canvas.height);
+        else if (currentWeather === 'fog') initFog(canvas.width, canvas.height);
+        else { rainParticles = []; fogParticles = []; }
+        weatherNeedsInit = false;
+    }
     
     // Wyczyść canvas - tło pola bitwy
     ctx.fillStyle = '#2d5016';
@@ -986,6 +1111,13 @@ function renderSimulation(data) {
         ctx.lineWidth = 1;
         ctx.strokeRect(x - barWidth/2, moraleY - barHeight/2, barWidth, barHeight);
     });
+    }
+
+    // --- RYSOWANIE POGODY ---
+    if (currentWeather === 'rain') {
+        drawRain(ctx, canvas.width, canvas.height);
+    } else if (currentWeather === 'fog') {
+        drawFog(ctx, canvas.width, canvas.height);
     }
 }
 
