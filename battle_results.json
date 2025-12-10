@@ -5300,5 +5300,788 @@
         }
       }
     }
+  },
+  {
+    "timestamp": "2025-12-10 23:15:34",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 11,
+    "crown_count": 0,
+    "cossack_count": 11,
+    "total_agents": 11,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:27:11",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 17,
+    "crown_count": 0,
+    "cossack_count": 17,
+    "total_agents": 17,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:30:17",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 19,
+    "crown_count": 0,
+    "cossack_count": 19,
+    "total_agents": 19,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:32:16",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 17,
+    "crown_count": 0,
+    "cossack_count": 17,
+    "total_agents": 17,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:33:04",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 18,
+    "crown_count": 0,
+    "cossack_count": 18,
+    "total_agents": 18,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:35:08",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 19,
+    "crown_count": 0,
+    "cossack_count": 19,
+    "total_agents": 19,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:36:04",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 18,
+    "crown_count": 0,
+    "cossack_count": 18,
+    "total_agents": 18,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:37:01",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 18,
+    "crown_count": 0,
+    "cossack_count": 18,
+    "total_agents": 18,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-12-10 23:37:48",
+    "scenario_id": "scenario_1",
+    "scenario_name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
+    "winner": "Kozacy/Tatarzy",
+    "survivors": 20,
+    "crown_count": 0,
+    "cossack_count": 20,
+    "total_agents": 20,
+    "initial_units": {
+      "Artyleria Koronna": 0,
+      "Artyleria Kozacka": 0,
+      "Czeladz Obozowa": 6,
+      "Czern": 0,
+      "Dragonia": 0,
+      "Husaria": 2,
+      "Jazda Kozacka": 4,
+      "Jazda Tatarska": 16,
+      "Pancerni": 4,
+      "Piechota Kozacka": 0,
+      "Piechota Niemiecka": 0,
+      "Pospolite Ruszenie": 10,
+      "Rajtaria": 0,
+      "_deployment": {
+        "Czeladz Obozowa": {
+          "x": [
+            35,
+            55
+          ],
+          "y": [
+            30,
+            70
+          ]
+        },
+        "Husaria": {
+          "x": [
+            50,
+            65
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Kozacka": {
+          "x": [
+            2,
+            15
+          ],
+          "y": [
+            40,
+            60
+          ]
+        },
+        "Jazda Tatarska": {
+          "x": [
+            2,
+            20
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pancerni": {
+          "x": [
+            45,
+            60
+          ],
+          "y": [
+            10,
+            90
+          ]
+        },
+        "Pospolite Ruszenie": {
+          "x": [
+            25,
+            45
+          ],
+          "y": [
+            20,
+            80
+          ]
+        }
+      }
+    }
   }
 ]

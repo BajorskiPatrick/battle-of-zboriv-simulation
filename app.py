@@ -543,13 +543,17 @@ def simulation_step():
         # Sprawdź status bitwy
         battle_status = simulation.get_battle_status()
         
+        # Przygotuj strefy leczenia
+        healing_zones_data = [{"x": x, "y": y} for x, y in simulation.healing_zones]
+
         return jsonify({
             "agents": agents_data,
             "stats": stats,
             "battle_status": battle_status,
             "running": simulation_running,
-            "map_width": simulation.width,
-            "map_height": simulation.height
+            "map_width": simulation.grid.width,
+            "map_height": simulation.grid.height,
+            "healing_zones": healing_zones_data
         })
 
 @app.route('/api/simulation-frame', methods=['GET'])

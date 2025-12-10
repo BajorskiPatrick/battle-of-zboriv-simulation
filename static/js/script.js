@@ -1113,6 +1113,57 @@ function renderSimulation(data) {
     });
     }
 
+    // --- RYSOWANIE STREF LECZENIA (SZPITALE POLOWE) ---
+    // Rysujemy PO jednostkach, żeby były widoczne, ale PRZED pogodą
+    // Pobieramy strefy z danych symulacji (zdefiniowane w model.py)
+    const healingZones = data.healing_zones || [
+        {x: 115, y: 15}, {x: 135, y: 15},
+        {x: 115, y: 50}, {x: 135, y: 50},
+        {x: 115, y: 85}, {x: 135, y: 85}
+    ];
+
+    ctx.lineWidth = 2;
+
+    healingZones.forEach(zone => {
+        // Sprawdź czy strefa jest w granicach mapy
+        if (zone.x >= data.map_width || zone.y >= data.map_height) {
+            console.warn('Healing zone out of bounds:', zone);
+            return;
+        }
+
+        // Konwersja współrzędnych siatki na piksele
+        const zx = zone.x * tileSize * scale;
+        const zy = zone.y * tileSize * scale;
+        const size = tileSize * scale; // Rozmiar jednego pola (16x2 = 32px)
+
+        // Tło strefy - bardziej widoczne
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.4)'; // Zwiększona widoczność
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.9)';
+        
+        ctx.fillRect(zx, zy, size, size);
+        ctx.strokeRect(zx, zy, size, size);
+
+        // Rysowanie krzyża
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
+        ctx.lineWidth = 3;
+        
+        const crossSize = size * 0.6;
+        const offset = (size - crossSize) / 2;
+
+        // Pionowa belka
+        ctx.moveTo(zx + size/2, zy + offset);
+        ctx.lineTo(zx + size/2, zy + size - offset);
+        
+        // Pozioma belka
+        ctx.moveTo(zx + offset, zy + size/2);
+        ctx.lineTo(zx + size - offset, zy + size/2);
+        
+        ctx.stroke();
+        ctx.restore();
+    });
+
     // --- RYSOWANIE POGODY ---
     if (currentWeather === 'rain') {
         drawRain(ctx, canvas.width, canvas.height);
@@ -1220,6 +1271,23 @@ function showTooltip(screenX, screenY, agent) {
     };
     const stateText = stateMap[agent.state] || agent.state;
     
+    // Sprawdź czy jednostka jest w strefie leczenia (tylko dla Korony)
+    let healingStatus = '';
+    if (agent.faction === 'Armia Koronna') {
+        const healingZones = [
+            {x: 115, y: 15}, {x: 135, y: 15},
+            {x: 115, y: 50}, {x: 135, y: 50},
+            {x: 115, y: 85}, {x: 135, y: 85}
+        ];
+        
+        // Proste sprawdzenie czy jest blisko strefy (tolerancja 1 kratki)
+        const isHealing = healingZones.some(z => Math.abs(agent.x - z.x) < 1.5 && Math.abs(agent.y - z.y) < 1.5);
+        
+        if (isHealing && agent.hp < agent.max_hp) {
+            healingStatus = '<div style="color: #4caf50; font-weight: bold; margin-top: 5px; text-align: center;">🏥 LECZENIE (+5 HP/tura)</div>';
+        }
+    }
+
     tooltip.innerHTML = `
         <div style="border-bottom: 1px solid #555; padding-bottom: 5px; margin-bottom: 5px;">
             <strong style="color: ${factionColor}; font-size: 1.1em;">${agent.unit_type}</strong>
@@ -1235,6 +1303,7 @@ function showTooltip(screenX, screenY, agent) {
             <span style="color: #ccc;">Stan:</span>
             <span style="color: #fff">${stateText}</span>
         </div>
+        ${healingStatus}
     `;
 }
 
