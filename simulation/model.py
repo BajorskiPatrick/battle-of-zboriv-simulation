@@ -52,13 +52,13 @@ class BattleOfZborowModel(mesa.Model):
                 "hp": 120, "morale": 110, "discipline": 85,
                 "melee_damage": 70, "ranged_damage": 0, "range": 1, "ammo": 0, "defense": 5, "speed": 7,
                 "description": "Jazda średniozbrojna, uniwersalna.",
-                "sprite_path": "assets/sprites/crown_cavalry.png"
+                "sprite_path": "assets/sprites/pancerni.png"
             },
             "Rajtaria": {
                 "hp": 110, "morale": 100, "discipline": 90,
                 "melee_damage": 40, "ranged_damage": 30, "range": 3, "ammo": 12, "defense": 6, "speed": 6,
                 "description": "Ciężka jazda z bronią palną.",
-                "sprite_path": "assets/sprites/crown_cavalry.png"
+                "sprite_path": "assets/sprites/rajtaria.png"
             },
             "Dragonia": {
                 "hp": 100, "morale": 95, "discipline": 85,
@@ -88,7 +88,7 @@ class BattleOfZborowModel(mesa.Model):
                 "hp": 50, "morale": 90, "discipline": 90,
                 "melee_damage": 5, "ranged_damage": 150, "range": 15, "ammo": 30, "defense": 0, "speed": 1,
                 "description": "Potężna siła ognia, bardzo wolna.",
-                "sprite_path": "assets/sprites/crown_infantry.png" 
+                "sprite_path": "assets/sprites/armata.png" 
             },
 
             # --- KOZACY I TATARZY ---
