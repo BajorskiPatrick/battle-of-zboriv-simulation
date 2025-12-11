@@ -154,11 +154,24 @@ class MilitaryAgent(mesa.Agent):
         if self.morale < panic_threshold and self.state != "FLEEING":
             if self.random.randint(0, 100) > self.discipline:
                 self.state = "FLEEING"
-                safe_y = 0 if self.faction == "Kozacy/Tatarzy" else self.model.grid.height - 1
-                self.calculate_path((current_pos[0], safe_y))
+                
+                if self.faction == "Armia Koronna":
+                    # Polacy uciekają do najbliższego punktu leczenia (obozu)
+                    zones = self.model.healing_zones
+                    # Znajdź strefę najbliższą aktualnej pozycji
+                    closest_zone = min(zones, key=lambda z: self.distance_to_pos(current_pos, z))
+                    self.calculate_path(closest_zone)
+                else:
+                    safe_y = 0 if self.faction == "Kozacy/Tatarzy" else self.model.grid.height - 1
+                    self.calculate_path((current_pos[0], safe_y))
         
         if self.state == "FLEEING":
-            if self.path: self.move()
+            # Jeśli dotarliśmy do celu ucieczki (punktu leczenia)
+            if not self.path and self.faction == "Armia Koronna":
+                # Jesteśmy w punkcie leczenia - czekamy na uleczenie przez model (apply_camp_healing)
+                pass 
+            elif self.path: 
+                self.move()
             return
 
         # 2. Walka

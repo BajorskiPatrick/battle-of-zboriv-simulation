@@ -31,6 +31,14 @@ class BattleOfZborowModel(mesa.Model):
         # Konfiguracja jednostek
         self.units_config = units_config if units_config else {}
 
+        # DEFINICJA 6 PUNKTÓW LECZENIA (ROGI OBOZU KORONNEGO)
+        # Zakładamy, że obóz jest po prawej stronie mapy (X > 100)
+        self.healing_zones = [
+            (73, 24), (126, 24),  # Dolna flanka
+            (127, 41), (127, 52),  # Centrum
+            (99, 68), (127, 67)   # Górna flanka
+        ]
+
         # --- DEFINICJE JEDNOSTEK ---
         self.unit_params = {
             # --- ARMIA KORONNA ---
@@ -44,13 +52,13 @@ class BattleOfZborowModel(mesa.Model):
                 "hp": 120, "morale": 110, "discipline": 85,
                 "melee_damage": 70, "ranged_damage": 0, "range": 1, "ammo": 0, "defense": 5, "speed": 7,
                 "description": "Jazda średniozbrojna, uniwersalna.",
-                "sprite_path": "assets/sprites/crown_cavalry.png"
+                "sprite_path": "assets/sprites/pancerni.png"
             },
             "Rajtaria": {
                 "hp": 110, "morale": 100, "discipline": 90,
                 "melee_damage": 40, "ranged_damage": 30, "range": 3, "ammo": 12, "defense": 6, "speed": 6,
                 "description": "Ciężka jazda z bronią palną.",
-                "sprite_path": "assets/sprites/crown_cavalry.png"
+                "sprite_path": "assets/sprites/rajtaria.png"
             },
             "Dragonia": {
                 "hp": 100, "morale": 95, "discipline": 85,
@@ -80,7 +88,7 @@ class BattleOfZborowModel(mesa.Model):
                 "hp": 50, "morale": 90, "discipline": 90,
                 "melee_damage": 5, "ranged_damage": 150, "range": 15, "ammo": 30, "defense": 0, "speed": 1,
                 "description": "Potężna siła ognia, bardzo wolna.",
-                "sprite_path": "assets/sprites/crown_infantry.png" 
+                "sprite_path": "assets/sprites/armata.png" 
             },
 
             # --- KOZACY I TATARZY ---
@@ -236,6 +244,35 @@ class BattleOfZborowModel(mesa.Model):
     def step(self):
         self.schedule.step()
         self.cleanup_dead_agents()
+        self.apply_camp_healing()
+    
+    def apply_camp_healing(self):
+        """ Leczy jednostki koronne znajdujące się w strefach leczenia. """
+        for zone in self.healing_zones:
+            # Sprawdź czy strefa mieści się na mapie
+            if 0 <= zone[0] < self.width and 0 <= zone[1] < self.height:
+                # Pobierz jednostki z tego pola
+                cell_contents = self.grid.get_cell_list_contents([zone])
+                
+                for agent in cell_contents:
+                    # Leczymy tylko żywych Polaków
+                    if isinstance(agent, MilitaryAgent) and agent.faction == "Armia Koronna" and agent.hp > 0:
+                        
+                        # 1. Leczenie HP
+                        if agent.hp < agent.max_hp:
+                            heal_amount = 5  # Ilość HP na turę
+                            agent.hp = min(agent.max_hp, agent.hp + heal_amount)
+                        
+                        # 2. Odnawianie Morale
+                        if agent.morale < agent.max_morale:
+                            morale_boost = 3
+                            agent.morale = min(agent.max_morale, agent.morale + morale_boost)
+                        
+                        # 3. Powrót do walki
+                        # Jeśli jednostka uciekała, ale się uleczyła -> wraca do stanu IDLE
+                        if agent.state == "FLEEING" and agent.hp > agent.max_hp * 0.6 and agent.morale > 40:
+                            agent.state = "IDLE"
+                            agent.path = [] # Zatrzymaj się
     
     def cleanup_dead_agents(self):
         dead_agents = [agent for agent in self.schedule.agents 
