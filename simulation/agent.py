@@ -99,11 +99,22 @@ class MilitaryAgent(mesa.Agent):
                 return # Jednostka grzęźnie w tym turze
         except: pass
 
-        if not self.model.grid.out_of_bounds(next_pos_tuple) and self.model.grid.is_cell_empty(next_pos_tuple):
+        # --- ZMIANA: Sprawdzenie kolizji z innymi jednostkami ---
+        if self.model.grid.out_of_bounds(next_pos_tuple):
+            self.path = []
+            return
+
+        # Sprawdź, czy na polu docelowym stoi inna żywa jednostka
+        cell_contents = self.model.grid.get_cell_list_contents(next_pos_tuple)
+        blocking_unit = any(isinstance(obj, MilitaryAgent) and obj.hp > 0 for obj in cell_contents)
+
+        if not blocking_unit:
              self.model.grid.move_agent(self, next_pos_tuple)
              self.path.pop(0)
         else:
-             if self.random.random() < 0.5: self.path = []
+             # Jeśli pole jest zajęte (ktoś wszedł tam przed nami w tej turze),
+             # czyścimy ścieżkę, co wymusi jej przeliczenie w następnym kroku (ominięcie przeszkody)
+             self.path = []
 
     def calculate_path(self, target_pos_tuple):
         if not isinstance(target_pos_tuple, tuple): target_pos_tuple = (target_pos_tuple[0], target_pos_tuple[1])
@@ -118,11 +129,38 @@ class MilitaryAgent(mesa.Agent):
         start_node = self.model.path_grid.node(current_pos[0], current_pos[1])
         end_node = self.model.path_grid.node(target_pos_tuple[0], target_pos_tuple[1])
         
+        # --- ZMIANA: Traktuj inne jednostki jako przeszkody ---
+        # Zbieramy listę węzłów, które tymczasowo zablokujemy
+        temp_blocked_nodes = []
+        
+        # Iterujemy po wszystkich agentach, aby oznaczyć ich pozycje jako zajęte
+        for agent in self.model.schedule.agents:
+            # Interesują nas tylko żywe jednostki wojskowe, inne niż my sami
+            if isinstance(agent, MilitaryAgent) and agent.hp > 0 and agent != self:
+                pos = agent.get_pos_tuple()
+                # WAŻNE: Nie blokujemy celu podróży (np. jeśli idziemy atakować wroga, musimy móc wyznaczyć ścieżkę do jego sąsiedztwa)
+                if pos != target_pos_tuple:
+                    node = self.model.path_grid.node(pos[0], pos[1])
+                    # Jeśli węzeł był chodliwy, blokujemy go tymczasowo
+                    if node.walkable:
+                        node.walkable = False
+                        temp_blocked_nodes.append(node)
+        # -------------------------------------------------------
+
         if not end_node.walkable:
+            # Jeśli cel jest zablokowany (np. ściana), przywracamy stan i kończymy
+            for node in temp_blocked_nodes:
+                node.walkable = True
             self.path = []
             return
 
         path, _ = finder.find_path(start_node, end_node, self.model.path_grid)
+        
+        # --- ZMIANA: Przywracamy stan siatki dla innych agentów ---
+        for node in temp_blocked_nodes:
+            node.walkable = True
+        # -------------------------------------------------------
+
         self.model.path_grid.cleanup()
         self.path = path[1:] if path else []
 
