@@ -11,26 +11,33 @@
             color: #e0e0e0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
         }
         .container {
-            max-width: 1200px;
             width: 100%;
+            height: 100%;
             background: #2d2d2d;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             border-bottom: 1px solid #444;
             padding-bottom: 10px;
+            flex-shrink: 0;
         }
         .btn {
             background: #444;
@@ -43,23 +50,41 @@
         .btn:hover {
             background: #555;
         }
+        #content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            flex: 1;
+        }
         .heatmap-wrapper {
             position: relative;
             width: 100%;
-            overflow: auto;
+            flex: 1;
+            overflow: hidden;
             display: flex;
             justify-content: center;
-            background: #000;
+            align-items: center;
+            background: #111;
             border: 1px solid #444;
+            border-radius: 4px;
         }
         canvas {
             display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .legend {
             margin-top: 10px;
             display: flex;
             gap: 20px;
             justify-content: center;
+            flex-shrink: 0;
+            padding: 5px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
         }
         .legend-item {
             display: flex;
@@ -75,6 +100,7 @@
             margin-bottom: 10px;
             font-size: 0.9em;
             color: #aaa;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -82,7 +108,11 @@
     <div class="container">
         <div class="header">
             <h1>Heatmapa Bitwy</h1>
-            <a href="/dashboard" class="btn">⟵ Powrót do Dashboardu</a>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button id="fitBtn" class="btn">Dopasuj do okna</button>
+                <button id="oneToOneBtn" class="btn">Wyświetl 1:1</button>
+                <a href="/dashboard" class="btn">⟵ Powrót do Dashboardu</a>
+            </div>
         </div>
 
         <div id="loading">Ładowanie danych...</div>
@@ -115,14 +145,145 @@
 
         async function loadData() {
             try {
-                const response = await fetch(`/api/battle-result/${resultId}`);
-                const json = await response.json();
+                // 1) Meta o wyniku
+                const resultRes = await fetch(`/api/battle-result/${resultId}`);
+                const resultJson = await resultRes.json();
+                if (!resultJson.ok) throw new Error(resultJson.error || "Nie udało się pobrać danych wyniku");
+                const resultData = resultJson.data;
+                document.getElementById('scenarioName').textContent = resultData.scenario_name || "Nieznany scenariusz";
+                document.getElementById('timestamp').textContent = resultData.timestamp;
+                document.getElementById('winner').textContent = resultData.winner;
 
-                if (!json.ok) {
-                    throw new Error(json.error || "Nie udało się pobrać danych");
+                // 2) Dane mapy (jak w widoku symulacji)
+                const mapRes = await fetch('/api/map-data');
+                const mapJson = await mapRes.json();
+                if (mapJson.error) throw new Error(mapJson.error);
+
+                const tileGrid = mapJson.tiles;       // [y][x] GID bez flag
+                const flipFlags = mapJson.flip_flags; // [y][x] {h,v,d}
+                const width = mapJson.width;
+                const height = mapJson.height;
+                const tileW = mapJson.tile_width;
+                const tileH = mapJson.tile_height;
+                const tilesetColumns = mapJson.tileset_columns || 32;
+                const tilesetSpacing = mapJson.tileset_spacing || 0;
+                const tilesetFirstgid = mapJson.tileset_firstgid || 1;
+                const tilesetImagePath = mapJson.tileset_image; // 'assets/map/...png'
+
+                // 3) Heatmapa z wyniku (musi mieć wymiary width/height)
+                const heatmap = resultData.heatmap;
+                if (!heatmap || !heatmap.crown || !heatmap.cossack) throw new Error('Brak danych heatmapy w wyniku');
+
+                // 4) Canvas + context
+                const canvas = document.getElementById('heatmapCanvas');
+                const ctx = canvas.getContext('2d');
+                const wrapper = document.querySelector('.heatmap-wrapper');
+
+                // ustaw rozmiar 1:1
+                canvas.width = width * tileW;
+                canvas.height = height * tileH;
+
+                // 5) Załaduj tileset image
+                const tilesetImg = await loadImage(tilesetImagePath);
+
+                // 6) Rysuj warstwę "Teren" dokładnie jak w symulacji
+                // Uwaga: index.html/simulation korzysta z odwróconej osi Y (wyświetla (height - y - 1))?
+                // Tutaj trzymamy naturalny porządek y od góry do dołu — dopasujemy jeśli trzeba.
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const gid = tileGrid[y][x];
+                        if (!gid || gid === 0) continue;
+                        const localId = gid - tilesetFirstgid;
+                        if (localId < 0) continue;
+
+                        const col = localId % tilesetColumns;
+                        const row = Math.floor(localId / tilesetColumns);
+                        const sx = col * (tileW + tilesetSpacing);
+                        const sy = row * (tileH + tilesetSpacing);
+
+                        const dx = x * tileW;
+                        const dy = y * tileH; // brak odwrócenia osi Y dla mapy tła
+
+                        // Uwaga: flipy h/v/d — prosty fallback (rozszerzenie możliwe)
+                        const flags = flipFlags[y][x] || {h:false,v:false,d:false};
+                        ctx.save();
+                        // transformacje względem centrum kafelka
+                        ctx.translate(dx + tileW/2, dy + tileH/2);
+                        // diagonal flip w TMX często oznacza zamianę osi + rotacje; tu uproszczony wariant
+                        if (flags.d) {
+                            // zamień x/y przez rotację 90deg i ewentualnie lustrzane odbicia
+                            ctx.rotate(Math.PI / 2);
+                        }
+                        ctx.scale(flags.h ? -1 : 1, flags.v ? -1 : 1);
+                        ctx.drawImage(tilesetImg, sx, sy, tileW, tileH, -tileW/2, -tileH/2, tileW, tileH);
+                        ctx.restore();
+                    }
                 }
 
-                renderHeatmap(json.data);
+                // 7) Nanieś heatmapę (crown/cossack) jako overlay prostokątów RGBA
+                const crownMap = heatmap.crown;
+                const cossackMap = heatmap.cossack;
+                let maxVal = 1;
+                for (const row of crownMap) if (row && row.length) maxVal = Math.max(maxVal, Math.max(...row));
+                for (const row of cossackMap) if (row && row.length) maxVal = Math.max(maxVal, Math.max(...row));
+
+                const overlayCanvas = document.createElement('canvas');
+                overlayCanvas.width = canvas.width;
+                overlayCanvas.height = canvas.height;
+                const octx = overlayCanvas.getContext('2d');
+
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const cVal = crownMap[y][x];
+                        const kVal = cossackMap[y][x];
+                        if (cVal > 0 || kVal > 0) {
+                            const cInt = Math.min(1, Math.log(cVal + 1) / Math.log(maxVal + 1) * 2.5);
+                            const kInt = Math.min(1, Math.log(kVal + 1) / Math.log(maxVal + 1) * 2.5);
+                            const r = Math.round(cInt * 255);
+                            const b = Math.round(kInt * 255);
+                            const a = Math.round(Math.min(0.8, Math.max(cInt, kInt) * 0.8 + 0.2) * 255);
+                            octx.fillStyle = `rgba(${r},0,${b},${a/255})`;
+                            octx.fillRect(x * tileW, y * tileH, tileW, tileH);
+                        }
+                    }
+                }
+
+                // wrysuj overlay na główny canvas
+                ctx.drawImage(overlayCanvas, 0, 0);
+
+                // 8) Fit/1:1 kontrolki jak wcześniej
+                function fitCanvas() {
+                    const padX = 20;
+                    const padY = 20;
+                    const maxW = wrapper.clientWidth - padX;
+                    const maxH = wrapper.clientHeight - padY;
+                    if (maxW <= 0 || maxH <= 0) return;
+                    const scale = Math.min(maxW / canvas.width, maxH / canvas.height, 1);
+                    canvas.style.width = Math.round(canvas.width * scale) + 'px';
+                    canvas.style.height = Math.round(canvas.height * scale) + 'px';
+                }
+                function naturalCanvas() {
+                    canvas.style.width = canvas.width + 'px';
+                    canvas.style.height = canvas.height + 'px';
+                    wrapper.style.overflow = 'auto';
+                }
+                let currentMode = 'fit';
+                function setMode(mode) {
+                    currentMode = mode;
+                    if (mode === 'fit') {
+                        wrapper.style.overflow = 'hidden';
+                        fitCanvas();
+                    } else {
+                        naturalCanvas();
+                    }
+                }
+                setMode('fit');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'flex';
+                window.addEventListener('resize', () => { if (currentMode === 'fit') fitCanvas(); });
+                document.getElementById('fitBtn').addEventListener('click', () => setMode('fit'));
+                document.getElementById('oneToOneBtn').addEventListener('click', () => setMode('1:1'));
+
             } catch (e) {
                 document.getElementById('loading').style.display = 'none';
                 const errDiv = document.getElementById('error');
@@ -131,71 +292,14 @@
             }
         }
 
-        function renderHeatmap(data) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('content').style.display = 'block';
-
-            document.getElementById('scenarioName').textContent = data.scenario_name || "Nieznany scenariusz";
-            document.getElementById('timestamp').textContent = data.timestamp;
-            document.getElementById('winner').textContent = data.winner;
-
-            if (!data.heatmap) {
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('error').textContent = "Brak danych heatmapy dla tego wyniku.";
-                return;
-            }
-
-            const canvas = document.getElementById('heatmapCanvas');
-            const ctx = canvas.getContext('2d');
-
-            const width = data.heatmap.width;
-            const height = data.heatmap.height;
-            const tileSize = 10; // Pixels per tile
-
-            canvas.width = width * tileSize;
-            canvas.height = height * tileSize;
-
-            // Fill background
-            ctx.fillStyle = "#111";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const crownMap = data.heatmap.crown;
-            const cossackMap = data.heatmap.cossack;
-
-            // Find max value for normalization
-            let maxVal = 1;
-            for(let row of crownMap) maxVal = Math.max(maxVal, ...row);
-            for(let row of cossackMap) maxVal = Math.max(maxVal, ...row);
-
-            // Draw heatmap
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const crownVal = crownMap[y][x];
-                    const cossackVal = cossackMap[y][x];
-
-                    if (crownVal > 0 || cossackVal > 0) {
-                        const xPos = x * tileSize;
-                        const yPos = y * tileSize;
-
-                        // Normalize intensity
-                        // Logarithmic scale might be better for visibility
-                        const crownIntensity = Math.min(1, Math.log(crownVal + 1) / Math.log(maxVal + 1) * 2);
-                        const cossackIntensity = Math.min(1, Math.log(cossackVal + 1) / Math.log(maxVal + 1) * 2);
-
-                        // Mix colors
-                        // Red for Crown, Blue for Cossack
-                        // If both present, mix to Purple
-
-                        const r = Math.floor(crownIntensity * 255);
-                        const b = Math.floor(cossackIntensity * 255);
-                        const g = 0;
-                        const a = Math.min(1, Math.max(crownIntensity, cossackIntensity) + 0.2);
-
-                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-                        ctx.fillRect(xPos, yPos, tileSize, tileSize);
-                    }
-                }
-            }
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                // zapewnij poprawny path do assets z Flask
+                img.src = src.startsWith('assets/') ? ('/' + src) : src;
+            });
         }
 
         loadData();

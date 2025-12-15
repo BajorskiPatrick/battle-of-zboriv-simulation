@@ -651,5 +651,82 @@ def video_feed():
     return Response(stream_simulation(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/api/map-image')
+def get_map_image():
+    """Zwraca wyrenderowany obraz mapy (tło)"""
+    try:
+        # Użyj istniejącej symulacji jeśli jest, żeby nie ładować mapy od nowa
+        # Jeśli nie ma, stwórz tymczasowy model
+        global simulation
+
+        model_to_render = simulation
+        if model_to_render is None:
+            model_to_render = BattleOfZborowModel(MAP_PATH, {})
+
+        # Render at 1:1 (no extra scaling) for analytical images
+        renderer = WebRenderer(model_to_render, scale=1)
+        image = renderer.render_map_only()
+
+        buffered = io.BytesIO()
+        image.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+
+        return jsonify({
+            "image": f"data:image/png;base64,{img_str}",
+            "width": renderer.width,
+            "height": renderer.height
+        })
+    except Exception as e:
+        print(f"Błąd generowania obrazu mapy: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/heatmap-image/<result_id>', methods=['GET'])
+def get_heatmap_image(result_id):
+    """Generuje i zwraca obraz mapy z nałożoną heatmapą dla danego wyniku."""
+    try:
+        # 1. Pobierz dane wyniku
+        if not os.path.exists(RESULTS_FILE):
+            return jsonify({"error": "No results file"}), 404
+
+        with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        result = next((item for item in data if item.get("id") == result_id), None)
+
+        if not result or not result.get('heatmap'):
+            return jsonify({"error": "Result or heatmap data not found"}), 404
+
+        heatmap_data = result['heatmap']
+
+        # 2. Przygotuj renderer (użyj tymczasowego modelu tylko do załadowania mapy)
+        # Używamy globalnej symulacji jeśli dostępna, żeby nie ładować mapy od nowa
+        global simulation
+        model_to_render = simulation
+        if model_to_render is None:
+            model_to_render = BattleOfZborowModel(MAP_PATH, {})
+
+        # Render at 1:1 for heatmap export
+        renderer = WebRenderer(model_to_render, scale=1)
+
+        # 3. Wyrenderuj heatmapę
+        image = renderer.render_heatmap(heatmap_data)
+
+        # 4. Zwróć jako obraz
+        buffered = io.BytesIO()
+        image.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+
+        return jsonify({
+            "image": f"data:image/png;base64,{img_str}",
+            "width": renderer.width,
+            "height": renderer.height
+        })
+
+    except Exception as e:
+        print(f"Błąd generowania obrazu heatmapy: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
