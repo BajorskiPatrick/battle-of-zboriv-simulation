@@ -6,113 +6,26 @@
     <title>Heatmapa Bitwy</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <style>
-        body {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
-        .container {
-            width: 100%;
-            height: 100%;
-            background: #2d2d2d;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #444;
-            padding-bottom: 10px;
-            flex-shrink: 0;
-        }
-        .btn {
-            background: #444;
-            color: white;
-            text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-        .btn:hover {
-            background: #555;
-        }
-        #content {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            overflow: hidden;
-            flex: 1;
-        }
-        .heatmap-wrapper {
-            position: relative;
-            width: 100%;
-            flex: 1;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #111;
-            border: 1px solid #444;
-            border-radius: 4px;
-        }
-        canvas {
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-        .legend {
-            margin-top: 10px;
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-shrink: 0;
-            padding: 5px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 4px;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-        .info {
-            margin-bottom: 10px;
-            font-size: 0.9em;
-            color: #aaa;
-            flex-shrink: 0;
-        }
+        body { background-color: #1a1a1a; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 8px; display: flex; flex-direction: column; align-items: center; height: 100vh; box-sizing: border-box; overflow: hidden; }
+        .container { width: 100%; height: 100%; background: #2d2d2d; padding: 8px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; box-sizing: border-box; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #444; padding-bottom: 6px; flex-shrink: 0; }
+        .btn { background: #444; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; transition: background 0.2s; }
+        .btn:hover { background: #555; }
+        #content { display: none; flex-direction: column; height: 100%; overflow: hidden; flex: 1; }
+        .heatmap-wrapper { position: relative; width: 100%; flex: 1; overflow: hidden; display: block; background: transparent; border: none; }
+        /* Canvas: fill width; keep aspect ratio; align top-left to avoid side bars */
+        canvas { display: block; width: 100%; height: auto; max-height: 100%; object-fit: contain; margin: 0; }
+        .legend { margin-top: 6px; display: flex; gap: 12px; justify-content: center; flex-shrink: 0; padding: 4px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .info { margin-bottom: 6px; font-size: 0.9em; color: #aaa; flex-shrink: 0; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>Heatmapa Bitwy</h1>
-            <div style="display:flex;gap:8px;align-items:center;">
-                <button id="fitBtn" class="btn">Dopasuj do okna</button>
-                <button id="oneToOneBtn" class="btn">Wyświetl 1:1</button>
-                <a href="/dashboard" class="btn">⟵ Powrót do Dashboardu</a>
-            </div>
+            <a href="/dashboard" class="btn">⟵ Powrót do Dashboardu</a>
         </div>
 
         <div id="loading">Ładowanie danych...</div>
@@ -145,7 +58,6 @@
 
         async function loadData() {
             try {
-                // 1) Meta o wyniku
                 const resultRes = await fetch(`/api/battle-result/${resultId}`);
                 const resultJson = await resultRes.json();
                 if (!resultJson.ok) throw new Error(resultJson.error || "Nie udało się pobrać danych wyniku");
@@ -154,13 +66,12 @@
                 document.getElementById('timestamp').textContent = resultData.timestamp;
                 document.getElementById('winner').textContent = resultData.winner;
 
-                // 2) Dane mapy (jak w widoku symulacji)
                 const mapRes = await fetch('/api/map-data');
                 const mapJson = await mapRes.json();
                 if (mapJson.error) throw new Error(mapJson.error);
 
-                const tileGrid = mapJson.tiles;       // [y][x] GID bez flag
-                const flipFlags = mapJson.flip_flags; // [y][x] {h,v,d}
+                const tileGrid = mapJson.tiles;
+                const flipFlags = mapJson.flip_flags;
                 const width = mapJson.width;
                 const height = mapJson.height;
                 const tileW = mapJson.tile_width;
@@ -168,27 +79,20 @@
                 const tilesetColumns = mapJson.tileset_columns || 32;
                 const tilesetSpacing = mapJson.tileset_spacing || 0;
                 const tilesetFirstgid = mapJson.tileset_firstgid || 1;
-                const tilesetImagePath = mapJson.tileset_image; // 'assets/map/...png'
+                const tilesetImagePath = mapJson.tileset_image;
 
-                // 3) Heatmapa z wyniku (musi mieć wymiary width/height)
                 const heatmap = resultData.heatmap;
                 if (!heatmap || !heatmap.crown || !heatmap.cossack) throw new Error('Brak danych heatmapy w wyniku');
 
-                // 4) Canvas + context
                 const canvas = document.getElementById('heatmapCanvas');
                 const ctx = canvas.getContext('2d');
-                const wrapper = document.querySelector('.heatmap-wrapper');
 
-                // ustaw rozmiar 1:1
+                // mniejszy wrapper = mniej pustej przestrzeni; canvas rozciąga się na szerokość
                 canvas.width = width * tileW;
                 canvas.height = height * tileH;
 
-                // 5) Załaduj tileset image
                 const tilesetImg = await loadImage(tilesetImagePath);
 
-                // 6) Rysuj warstwę "Teren" dokładnie jak w symulacji
-                // Uwaga: index.html/simulation korzysta z odwróconej osi Y (wyświetla (height - y - 1))?
-                // Tutaj trzymamy naturalny porządek y od góry do dołu — dopasujemy jeśli trzeba.
                 for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
                         const gid = tileGrid[y][x];
@@ -200,27 +104,19 @@
                         const row = Math.floor(localId / tilesetColumns);
                         const sx = col * (tileW + tilesetSpacing);
                         const sy = row * (tileH + tilesetSpacing);
-
                         const dx = x * tileW;
-                        const dy = y * tileH; // brak odwrócenia osi Y dla mapy tła
+                        const dy = y * tileH;
 
-                        // Uwaga: flipy h/v/d — prosty fallback (rozszerzenie możliwe)
                         const flags = flipFlags[y][x] || {h:false,v:false,d:false};
                         ctx.save();
-                        // transformacje względem centrum kafelka
                         ctx.translate(dx + tileW/2, dy + tileH/2);
-                        // diagonal flip w TMX często oznacza zamianę osi + rotacje; tu uproszczony wariant
-                        if (flags.d) {
-                            // zamień x/y przez rotację 90deg i ewentualnie lustrzane odbicia
-                            ctx.rotate(Math.PI / 2);
-                        }
+                        if (flags.d) { ctx.rotate(Math.PI / 2); }
                         ctx.scale(flags.h ? -1 : 1, flags.v ? -1 : 1);
                         ctx.drawImage(tilesetImg, sx, sy, tileW, tileH, -tileW/2, -tileH/2, tileW, tileH);
                         ctx.restore();
                     }
                 }
 
-                // 7) Nanieś heatmapę (crown/cossack) jako overlay prostokątów RGBA
                 const crownMap = heatmap.crown;
                 const cossackMap = heatmap.cossack;
                 let maxVal = 1;
@@ -248,41 +144,10 @@
                     }
                 }
 
-                // wrysuj overlay na główny canvas
                 ctx.drawImage(overlayCanvas, 0, 0);
 
-                // 8) Fit/1:1 kontrolki jak wcześniej
-                function fitCanvas() {
-                    const padX = 20;
-                    const padY = 20;
-                    const maxW = wrapper.clientWidth - padX;
-                    const maxH = wrapper.clientHeight - padY;
-                    if (maxW <= 0 || maxH <= 0) return;
-                    const scale = Math.min(maxW / canvas.width, maxH / canvas.height, 1);
-                    canvas.style.width = Math.round(canvas.width * scale) + 'px';
-                    canvas.style.height = Math.round(canvas.height * scale) + 'px';
-                }
-                function naturalCanvas() {
-                    canvas.style.width = canvas.width + 'px';
-                    canvas.style.height = canvas.height + 'px';
-                    wrapper.style.overflow = 'auto';
-                }
-                let currentMode = 'fit';
-                function setMode(mode) {
-                    currentMode = mode;
-                    if (mode === 'fit') {
-                        wrapper.style.overflow = 'hidden';
-                        fitCanvas();
-                    } else {
-                        naturalCanvas();
-                    }
-                }
-                setMode('fit');
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'flex';
-                window.addEventListener('resize', () => { if (currentMode === 'fit') fitCanvas(); });
-                document.getElementById('fitBtn').addEventListener('click', () => setMode('fit'));
-                document.getElementById('oneToOneBtn').addEventListener('click', () => setMode('1:1'));
 
             } catch (e) {
                 document.getElementById('loading').style.display = 'none';
@@ -297,7 +162,6 @@
                 const img = new Image();
                 img.onload = () => resolve(img);
                 img.onerror = reject;
-                // zapewnij poprawny path do assets z Flask
                 img.src = src.startsWith('assets/') ? ('/' + src) : src;
             });
         }
