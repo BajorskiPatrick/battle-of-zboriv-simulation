@@ -15,4 +15,5 @@ dependencies = [
     "pillow>=11.3.0",
     "pygame>=2.6.1",
     "pytmx>=3.32",
+    "ruff>=0.14.9",
 ]
