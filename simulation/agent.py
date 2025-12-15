@@ -23,6 +23,9 @@ class MilitaryAgent(mesa.Agent):
         self.discipline = params.get("discipline", 50)
         self.defense = params.get("defense", 0)
         self.speed = params.get("speed", 1)
+        # Dodane: szybkostrzelność i cooldown strzału
+        self.rate_of_fire = params.get("rate_of_fire", 1.0)
+        self.fire_cooldown = 0.0
 
         self.melee_damage = params.get("melee_damage", 10)
         self.ranged_damage = params.get("ranged_damage", 0)
@@ -210,6 +213,9 @@ class MilitaryAgent(mesa.Agent):
     def step(self):
         if self.hp <= 0:
             return
+        # Tick cooldownu strzału (1 krok symulacji = 1 jednostka czasu)
+        if self.fire_cooldown > 0:
+            self.fire_cooldown = max(0.0, self.fire_cooldown - 1.0)
         current_pos = self.get_pos_tuple()
 
         # 1. Panika
@@ -251,26 +257,24 @@ class MilitaryAgent(mesa.Agent):
 
             # Walka dystansowa
             if 1 < distance <= self.attack_range and self.ranged_damage > 0:
-                # Wpływ deszczu na broń palną (niewypały)
                 misfire_chance = 0.4 if self.model.weather == "rain" else 0.0
 
                 if self.ammo > 0:
-                    if self.random.random() < (0.7 - misfire_chance):
+                    # Sprawdź cooldown szybkostrzelności
+                    if self.fire_cooldown <= 0 and self.random.random() < (0.7 - misfire_chance):
                         self.state = "ATTACKING"
                         self.ammo -= 1
+                        # Ustaw cooldown po strzale: przerwa = 1 / rate_of_fire
+                        self.fire_cooldown = max(0.1, 1.0 / max(0.1, self.rate_of_fire))
 
-                        # Bonus za osłonę terenu
                         enemy_pos = enemy.get_pos_tuple()
-                        terrain_cover = self.model.terrain_costs[enemy_pos[1]][
-                            enemy_pos[0]
-                        ]
+                        terrain_cover = self.model.terrain_costs[enemy_pos[1]][enemy_pos[0]]
                         dmg = self.ranged_damage
                         if terrain_cover > 1.5:
                             dmg *= 0.6
-
                         enemy.receive_damage(dmg)
                     else:
-                        pass  # Niewypał lub celowanie
+                        pass  # niewypał, celowanie lub przeładowanie
                 else:
                     # Brak amunicji -> szarża
                     self.state = "MOVING"

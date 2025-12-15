@@ -62,6 +62,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 0,
                 "defense": 8,
                 "speed": 6,
+                "rate_of_fire": 1.0,
                 "description": "Elitarna ciężka jazda przełamująca.",
                 "sprite_path": "assets/sprites/crown_cavalry.png",
             },
@@ -75,6 +76,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 0,
                 "defense": 5,
                 "speed": 7,
+                "rate_of_fire": 1.0,
                 "description": "Jazda średniozbrojna, uniwersalna.",
                 "sprite_path": "assets/sprites/pancerni.png",
             },
@@ -88,6 +90,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 12,
                 "defense": 6,
                 "speed": 6,
+                "rate_of_fire": 0.8,
                 "description": "Ciężka jazda z bronią palną.",
                 "sprite_path": "assets/sprites/rajtaria.png",
             },
@@ -101,6 +104,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 15,
                 "defense": 4,
                 "speed": 5,
+                "rate_of_fire": 1.2,
                 "description": "Mobilna piechota konna.",
                 "sprite_path": "assets/sprites/crown_dragoon.png",
             },
@@ -114,6 +118,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 20,
                 "defense": 6,
                 "speed": 3,
+                "rate_of_fire": 1.3,
                 "description": "Wysoka dyscyplina, silny ogień.",
                 "sprite_path": "assets/sprites/crown_infantry.png",
             },
@@ -127,6 +132,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 5,
                 "defense": 2,
                 "speed": 6,
+                "rate_of_fire": 0.8,
                 "description": "Niska dyscyplina, podatność na panikę.",
                 "sprite_path": "assets/sprites/crown_levy.png",
             },
@@ -140,6 +146,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 0,
                 "defense": 0,
                 "speed": 5,
+                "rate_of_fire": 1.0,
                 "description": "Słabo uzbrojona, zdeterminowana.",
                 "sprite_path": "assets/sprites/crown_levy.png",
             },
@@ -153,6 +160,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 30,
                 "defense": 0,
                 "speed": 1,
+                "rate_of_fire": 0.25,
                 "description": "Potężna siła ognia, bardzo wolna.",
                 "sprite_path": "assets/sprites/armata.png",
             },
@@ -167,6 +175,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 40,
                 "defense": 1,
                 "speed": 9,
+                "rate_of_fire": 1.8,
                 "description": "Szybcy łucznicy.",
                 "sprite_path": "assets/sprites/cossack_cavalry.png",
             },
@@ -180,6 +189,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 25,
                 "defense": 3,
                 "speed": 4,
+                "rate_of_fire": 1.4,
                 "description": "Znakomici strzelcy.",
                 "sprite_path": "assets/sprites/cossack_infantry.png",
             },
@@ -193,6 +203,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 0,
                 "defense": 0,
                 "speed": 5,
+                "rate_of_fire": 1.0,
                 "description": "Liczni, słabo uzbrojeni.",
                 "sprite_path": "assets/sprites/cossack_infantry.png",
             },
@@ -206,6 +217,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 0,
                 "defense": 3,
                 "speed": 7,
+                "rate_of_fire": 1.0,
                 "description": "Jazda średnia.",
                 "sprite_path": "assets/sprites/cossack_cavalry.png",
             },
@@ -219,6 +231,7 @@ class BattleOfZborowModel(mesa.Model):
                 "ammo": 25,
                 "defense": 0,
                 "speed": 1,
+                "rate_of_fire": 0.25,
                 "description": "Ostrzał obozu.",
                 "sprite_path": "assets/sprites/cossack_infantry.png",
             },
@@ -274,6 +287,10 @@ class BattleOfZborowModel(mesa.Model):
                     params["speed"] = max(2, params["speed"] - 3)  # Jazda grzęźnie
                 if "Artyleria" in name:
                     params["speed"] = 1  # Artyleria praktycznie stoi
+
+                # 3. Deszcz: wolniejsze tempo ognia (większa przerwa między strzałami)
+                if params.get("rate_of_fire"):
+                    params["rate_of_fire"] = max(0.1, params["rate_of_fire"] * 0.8)
 
     def find_valid_spawn_position(self, y_min, y_max, max_attempts=75):
         """Znajdź bezpieczne pole spawnu."""
