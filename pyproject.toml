@@ -1,0 +1,18 @@
+[project]
+name = "battle-of-zboriv-simulation"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "arcade>=3.3.3",
+    "flask>=3.1.2",
+    "flask-cors>=6.0.2",
+    "mesa==2.3.2",
+    "numpy>=2.2.6",
+    "pathfinding>=1.0.18",
+    "pdfplumber>=0.11.8",
+    "pillow>=11.3.0",
+    "pygame>=2.6.1",
+    "pytmx>=3.32",
+]

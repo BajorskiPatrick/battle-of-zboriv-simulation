@@ -10,6 +10,7 @@ from simulation.web_renderer import WebRenderer
 import threading
 import time
 import os
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -33,6 +34,11 @@ def dashboard():
     """Strona dashboardu analitycznego wyników bitew"""
     return render_template('dashboard.html')
 
+@app.route('/heatmap/<result_id>')
+def heatmap_view(result_id):
+    """Strona wyświetlająca heatmapę dla konkretnego wyniku"""
+    return render_template('heatmap.html', result_id=result_id)
+
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
     """Serwuje pliki statyczne (sprite'y, mapy) z folderu assets"""
@@ -46,9 +52,30 @@ def get_battle_results():
         if os.path.exists(RESULTS_FILE):
             with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+            # Nie wysyłaj pełnych danych heatmapy w liście, żeby nie zapchać łącza
+            # (opcjonalnie, ale dobra praktyka - tu zostawiam jak jest, bo user nie prosił o optymalizację)
         else:
             data = []
         return jsonify({"ok": True, "data": data})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route('/api/battle-result/<result_id>', methods=['GET'])
+def get_single_battle_result(result_id):
+    """Zwraca pojedynczy wynik bitwy po ID"""
+    try:
+        if os.path.exists(RESULTS_FILE):
+            with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            result = next((item for item in data if item.get("id") == result_id), None)
+
+            if result:
+                return jsonify({"ok": True, "data": result})
+            else:
+                return jsonify({"ok": False, "error": "Result not found"}), 404
+        else:
+            return jsonify({"ok": False, "error": "No results file"}), 404
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
@@ -458,13 +485,30 @@ def stop_simulation():
 @app.route('/api/save-battle-result', methods=['POST'])
 def save_battle_result():
     """Zapisuje wynik bitwy do pliku JSON"""
-    global current_scenario_id
-    
+    global current_scenario_id, simulation
+
     try:
         data = request.json
         
+        # Pobierz dane heatmapy z symulacji, jeśli istnieje
+        heatmap_data = None
+        with simulation_lock:
+            if simulation is not None:
+                # Upewnij się, że atrybuty istnieją (zabezpieczenie przed błędem usera)
+                h_crown = getattr(simulation, 'heatmap_crown', None)
+                h_cossack = getattr(simulation, 'heatmap_cossack', None)
+
+                if h_crown is not None and h_cossack is not None:
+                    heatmap_data = {
+                        "crown": h_crown.tolist(),
+                        "cossack": h_cossack.tolist(),
+                        "width": simulation.width,
+                        "height": simulation.height
+                    }
+
         # Przygotuj wynik bitwy
         battle_result = {
+            "id": str(uuid.uuid4()), # Generuj unikalne ID
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "scenario_id": current_scenario_id or data.get('scenario_id', 'unknown'),
             "scenario_name": data.get('scenario_name', 'Unknown'),
@@ -473,7 +517,8 @@ def save_battle_result():
             "crown_count": data.get('crown_count', 0),
             "cossack_count": data.get('cossack_count', 0),
             "total_agents": data.get('total_agents', 0),
-            "initial_units": data.get('initial_units', {})
+            "initial_units": data.get('initial_units', {}),
+            "heatmap": heatmap_data
         }
         
         # Wczytaj istniejące wyniki lub stwórz nową listę

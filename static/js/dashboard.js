@@ -263,7 +263,7 @@ function renderResultsTable(data) {
   container.innerHTML = '';
   const table = document.createElement('table');
   const thead = document.createElement('thead');
-  thead.innerHTML = '<tr><th>Czas</th><th>Scenariusz</th><th>Zwycięzca</th><th>Ocalałych</th><th>Koronna</th><th>Kozacy</th><th>Łącznie</th></tr>';
+  thead.innerHTML = '<tr><th>Czas</th><th>Scenariusz</th><th>Zwycięzca</th><th>Ocalałych</th><th>Koronna</th><th>Kozacy</th><th>Łącznie</th><th>Heatmapa</th></tr>';
   table.appendChild(thead);
   const tbody = document.createElement('tbody');
 
@@ -271,16 +271,21 @@ function renderResultsTable(data) {
   data.slice().reverse().slice(0, 10).forEach(r => {
     const tr = document.createElement('tr');
     const winnerBadge = r.winner === 'Armia Koronna' ? 'badge crown' : (r.winner === 'Kozacy/Tatarzy' ? 'badge cossack' : 'badge draw');
+
+    const heatmapLink = r.id ? `<a href="/heatmap/${r.id}" style="color: #4fc3f7; text-decoration: none; font-weight: bold;">Otwórz</a>` : '<span style="color:#555">-</span>';
+
     tr.innerHTML = `<td>${r.timestamp}</td>
                     <td>${r.scenario_name || '—'}</td>
                     <td><span class="${winnerBadge}">${r.winner}</span></td>
                     <td>${r.survivors ?? 0}</td>
                     <td>${r.crown_count ?? 0}</td>
                     <td>${r.cossack_count ?? 0}</td>
-                    <td>${r.total_agents ?? 0}</td>`;
+                    <td>${r.total_agents ?? 0}</td>
+                    <td>${heatmapLink}</td>`;
     tbody.appendChild(tr);
   });
 
   table.appendChild(tbody);
   container.appendChild(table);
 }
+

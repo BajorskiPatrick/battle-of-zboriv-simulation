@@ -28,6 +28,12 @@ class BattleOfZborowModel(mesa.Model):
         # Inicjalizacja gridu dla pathfindingu (biblioteka wymaga listy list)
         self.path_grid = Grid(matrix=self.terrain_costs.tolist())
         
+        # --- HEATMAPS ---
+        # Przechowujemy liczbę odwiedzin każdego pola przez frakcje
+        # Wymiary: [y][x] (zgodnie z konwencją numpy i mapy)
+        self.heatmap_crown = np.zeros((self.height, self.width), dtype=int)
+        self.heatmap_cossack = np.zeros((self.height, self.width), dtype=int)
+
         # Konfiguracja jednostek
         self.units_config = units_config if units_config else {}
 
@@ -243,6 +249,19 @@ class BattleOfZborowModel(mesa.Model):
 
     def step(self):
         self.schedule.step()
+
+        # --- UPDATE HEATMAPS ---
+        # Zliczamy pozycje żywych jednostek w tej turze
+        for agent in self.schedule.agents:
+            if isinstance(agent, MilitaryAgent) and agent.hp > 0 and agent.pos:
+                x, y = agent.pos
+                # Upewnij się, że współrzędne są w granicach (choć powinny być)
+                if 0 <= x < self.width and 0 <= y < self.height:
+                    if agent.faction == "Armia Koronna":
+                        self.heatmap_crown[y][x] += 1
+                    else:
+                        self.heatmap_cossack[y][x] += 1
+
         self.cleanup_dead_agents()
         self.apply_camp_healing()
     

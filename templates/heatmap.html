@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heatmapa Bitwy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+        .btn {
+            background: #444;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #555;
+        }
+        .heatmap-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            background: #000;
+            border: 1px solid #444;
+        }
+        canvas {
+            display: block;
+        }
+        .legend {
+            margin-top: 10px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .info {
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Heatmapa Bitwy</h1>
+            <a href="/dashboard" class="btn">⟵ Powrót do Dashboardu</a>
+        </div>
+
+        <div id="loading">Ładowanie danych...</div>
+        <div id="error" style="color: #ff6b6b; display: none;"></div>
+
+        <div id="content" style="display: none;">
+            <div class="info">
+                <span id="scenarioName"></span> | <span id="timestamp"></span> | Zwycięzca: <span id="winner"></span>
+            </div>
+
+            <div class="heatmap-wrapper">
+                <canvas id="heatmapCanvas"></canvas>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="dot" style="background-color: rgba(255, 0, 0, 0.8);"></span>
+                    Armia Koronna (Czerwony)
+                </div>
+                <div class="legend-item">
+                    <span class="dot" style="background-color: rgba(0, 0, 255, 0.8);"></span>
+                    Kozacy/Tatarzy (Niebieski)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const resultId = "{{ result_id }}";
+
+        async function loadData() {
+            try {
+                const response = await fetch(`/api/battle-result/${resultId}`);
+                const json = await response.json();
+
+                if (!json.ok) {
+                    throw new Error(json.error || "Nie udało się pobrać danych");
+                }
+
+                renderHeatmap(json.data);
+            } catch (e) {
+                document.getElementById('loading').style.display = 'none';
+                const errDiv = document.getElementById('error');
+                errDiv.style.display = 'block';
+                errDiv.textContent = `Błąd: ${e.message}`;
+            }
+        }
+
+        function renderHeatmap(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+
+            document.getElementById('scenarioName').textContent = data.scenario_name || "Nieznany scenariusz";
+            document.getElementById('timestamp').textContent = data.timestamp;
+            document.getElementById('winner').textContent = data.winner;
+
+            if (!data.heatmap) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = "Brak danych heatmapy dla tego wyniku.";
+                return;
+            }
+
+            const canvas = document.getElementById('heatmapCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const width = data.heatmap.width;
+            const height = data.heatmap.height;
+            const tileSize = 10; // Pixels per tile
+
+            canvas.width = width * tileSize;
+            canvas.height = height * tileSize;
+
+            // Fill background
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const crownMap = data.heatmap.crown;
+            const cossackMap = data.heatmap.cossack;
+
+            // Find max value for normalization
+            let maxVal = 1;
+            for(let row of crownMap) maxVal = Math.max(maxVal, ...row);
+            for(let row of cossackMap) maxVal = Math.max(maxVal, ...row);
+
+            // Draw heatmap
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const crownVal = crownMap[y][x];
+                    const cossackVal = cossackMap[y][x];
+
+                    if (crownVal > 0 || cossackVal > 0) {
+                        const xPos = x * tileSize;
+                        const yPos = y * tileSize;
+
+                        // Normalize intensity
+                        // Logarithmic scale might be better for visibility
+                        const crownIntensity = Math.min(1, Math.log(crownVal + 1) / Math.log(maxVal + 1) * 2);
+                        const cossackIntensity = Math.min(1, Math.log(cossackVal + 1) / Math.log(maxVal + 1) * 2);
+
+                        // Mix colors
+                        // Red for Crown, Blue for Cossack
+                        // If both present, mix to Purple
+
+                        const r = Math.floor(crownIntensity * 255);
+                        const b = Math.floor(cossackIntensity * 255);
+                        const g = 0;
+                        const a = Math.min(1, Math.max(crownIntensity, cossackIntensity) + 0.2);
+
+                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
+                        ctx.fillRect(xPos, yPos, tileSize, tileSize);
+                    }
+                }
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
+
