@@ -197,12 +197,15 @@ class MilitaryAgent(mesa.Agent):
                 self.state = "FLEEING"
 
                 if self.faction == "Armia Koronna":
-                    zones = self.model.healing_zones
-                    closest_zone = min(
-                        zones, key=lambda z: self.distance_to_pos(current_pos, z)
-                    )
+                    centers = self.model.healing_centers
+                    sorted_centers = sorted(centers, key=lambda z: self.distance_to_pos(current_pos, z))
 
-                    dist_heal = self.distance_to_pos(current_pos, closest_zone)
+                    target_center = None
+                    for center in sorted_centers:
+                        if not self.model.is_zone_full(center):
+                            target_center = center
+                            break
+
                     w = self.model.grid.width
                     h = self.model.grid.height
                     x, y = current_pos
@@ -211,10 +214,33 @@ class MilitaryAgent(mesa.Agent):
                     d_right = w - 1 - x
                     d_top = y
                     d_bottom = h - 1 - y
-
                     dist_edge = min(d_left, d_right, d_top, d_bottom)
 
-                    if dist_heal > 2 * dist_edge:
+                    should_flee_to_edge = False
+                    if target_center:
+                        dist_heal = self.distance_to_pos(current_pos, target_center)
+                        if dist_heal > 2 * dist_edge:
+                            should_flee_to_edge = True
+                    else:
+                        should_flee_to_edge = True
+
+                    if not should_flee_to_edge and target_center:
+                        cx, cy = target_center
+                        best_tile = target_center
+                        min_dist = float('inf')
+
+                        for dx in [-1, 0, 1]:
+                            for dy in [-1, 0, 1]:
+                                tx, ty = cx + dx, cy + dy
+                                if 0 <= tx < w and 0 <= ty < h:
+                                    cell_contents = self.model.grid.get_cell_list_contents([(tx, ty)])
+                                    if not any(isinstance(a, MilitaryAgent) for a in cell_contents):
+                                        d = self.distance_to_pos(current_pos, (tx, ty))
+                                        if d < min_dist:
+                                            min_dist = d
+                                            best_tile = (tx, ty)
+                        self.calculate_path(best_tile)
+                    else:
                         if dist_edge == d_left:
                             target = (0, y)
                         elif dist_edge == d_right:
@@ -224,8 +250,6 @@ class MilitaryAgent(mesa.Agent):
                         else:
                             target = (x, h - 1)
                         self.calculate_path(target)
-                    else:
-                        self.calculate_path(closest_zone)
                 else:
                     w = self.model.grid.width
                     h = self.model.grid.height

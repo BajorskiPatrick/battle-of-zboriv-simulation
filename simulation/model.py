@@ -28,7 +28,7 @@ class BattleOfZborowModel(mesa.Model):
 
         self.units_config = units_config if units_config else {}
 
-        self.healing_zones = [
+        self.healing_centers = [
             (73, 24),
             (126, 24),
             (127, 41),
@@ -36,6 +36,15 @@ class BattleOfZborowModel(mesa.Model):
             (99, 68),
             (127, 67),
         ]
+
+        self.healing_tiles = []
+        for center in self.healing_centers:
+            cx, cy = center
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    x, y = cx + dx, cy + dy
+                    if 0 <= x < self.width and 0 <= y < self.height:
+                        self.healing_tiles.append((x, y))
 
         self.unit_params = {
             "Husaria": {
@@ -357,12 +366,22 @@ class BattleOfZborowModel(mesa.Model):
         self.cleanup_dead_agents()
         self.apply_camp_healing()
 
-    def apply_camp_healing(self):
-        for zone in self.healing_zones:
-            if 0 <= zone[0] < self.width and 0 <= zone[1] < self.height:
-                cell_contents = self.grid.get_cell_list_contents([zone])
+    def is_zone_full(self, center):
+        cx, cy = center
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                x, y = cx + dx, cy + dy
+                if 0 <= x < self.width and 0 <= y < self.height:
+                    cell_contents = self.grid.get_cell_list_contents([(x, y)])
+                    if not any(isinstance(a, MilitaryAgent) for a in cell_contents):
+                        return False
+        return True
 
-                for agent in cell_contents:
+    def apply_camp_healing(self):
+        for tile in self.healing_tiles:
+            cell_contents = self.grid.get_cell_list_contents([tile])
+
+            for agent in cell_contents:
                     if (
                         isinstance(agent, MilitaryAgent)
                         and agent.faction == "Armia Koronna"
