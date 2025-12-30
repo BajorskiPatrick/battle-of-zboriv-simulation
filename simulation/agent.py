@@ -201,14 +201,52 @@ class MilitaryAgent(mesa.Agent):
                     closest_zone = min(
                         zones, key=lambda z: self.distance_to_pos(current_pos, z)
                     )
-                    self.calculate_path(closest_zone)
+
+                    dist_heal = self.distance_to_pos(current_pos, closest_zone)
+                    w = self.model.grid.width
+                    h = self.model.grid.height
+                    x, y = current_pos
+
+                    d_left = x
+                    d_right = w - 1 - x
+                    d_top = y
+                    d_bottom = h - 1 - y
+
+                    dist_edge = min(d_left, d_right, d_top, d_bottom)
+
+                    if dist_heal > 2 * dist_edge:
+                        if dist_edge == d_left:
+                            target = (0, y)
+                        elif dist_edge == d_right:
+                            target = (w - 1, y)
+                        elif dist_edge == d_top:
+                            target = (x, 0)
+                        else:
+                            target = (x, h - 1)
+                        self.calculate_path(target)
+                    else:
+                        self.calculate_path(closest_zone)
                 else:
-                    safe_y = (
-                        0
-                        if self.faction == "Kozacy/Tatarzy"
-                        else self.model.grid.height - 1
-                    )
-                    self.calculate_path((current_pos[0], safe_y))
+                    w = self.model.grid.width
+                    h = self.model.grid.height
+                    x, y = current_pos
+
+                    d_left = x
+                    d_right = w - 1 - x
+                    d_top = y
+                    d_bottom = h - 1 - y
+
+                    dist_edge = min(d_left, d_right, d_top, d_bottom)
+
+                    if dist_edge == d_left:
+                        target = (0, y)
+                    elif dist_edge == d_right:
+                        target = (w - 1, y)
+                    elif dist_edge == d_top:
+                        target = (x, 0)
+                    else:
+                        target = (x, h - 1)
+                    self.calculate_path(target)
 
         if self.state == "FLEEING":
             if not self.path and self.faction == "Armia Koronna":
