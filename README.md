@@ -2,6 +2,8 @@
 
 Projekt ten jest zaawansowaną symulacją agentową historycznej Bitwy pod Zborowem (1649). Wykorzystuje paradygmat modelowania agentowego (ABM) do odwzorowania zachowań poszczególnych oddziałów wojskowych, ich interakcji oraz wpływu terenu i pogody na przebieg starcia.
 
+Aplikacja oferuje interaktywny pulpit nawigacyjny do śledzenia bitwy w czasie rzeczywistym oraz narzędzia analityczne, takie jak mapy ciepła (heatmaps) i historię wyników starć.
+
 ## 1. Charakterystyka Jednostek
 
 W symulacji zaimplementowano szereg historycznych typów jednostek, z których każda posiada unikalny zestaw cech wpływających na jej skuteczność bojową.
@@ -28,6 +30,7 @@ Każdy agent (oddział) opisany jest przez następujące zmienne:
 | **Dragonia** | Piechota konna | Mobilni strzelcy, walczą dystansowo. |
 | **Piechota Niemiecka** | Elitarna piechota | Bardzo wysoka dyscyplina, silny ogień, powolna. |
 | **Pospolite Ruszenie** | Posiłki | Niska dyscyplina, łatwo wpadają w panikę, słabe uzbrojenie. |
+| **Czeladź Obozowa** | Obrona taboru | Słabo uzbrojona, ale zdeterminowana do obrony obozu. |
 | **Artyleria Koronna** | Wsparcie ogniowe | Ogromny zasięg i obrażenia, bardzo powolna, bezbronna w zwarciu. |
 
 #### Kozacy i Tatarzy
@@ -50,7 +53,7 @@ Sercem symulacji jest cykl decyzyjny agenta (`step`), który wykonuje się w ka�
     *   Jeśli `morale` spadnie poniżej progu paniki (obliczanego jako `25 - (dyscyplina / 5)`), agent wykonuje test dyscypliny.
     *   Niepowodzenie oznacza przejście w stan **FLEEING** (Ucieczka). Agent ignoruje rozkazy i ucieka najkrótszą drogą do krawędzi mapy.
 2.  **Wykrywanie Wroga:**
-    *   Agent skanuje otoczenie w promieniu wzroku (zależnym od pogody: 20 pól normalnie, 6 we mgle).
+    *   Agent skanuje otoczenie w promieniu wzroku zależnym od pogody.
     *   Wybiera najbliższego wroga jako cel.
 3.  **Walka:**
     *   **Dystansowa:** Jeśli wróg jest w zasięgu i agent ma amunicję.
@@ -58,7 +61,8 @@ Sercem symulacji jest cykl decyzyjny agenta (`step`), który wykonuje się w ka�
         *   Obrażenia są redukowane przez teren, na którym stoi cel (osłona).
     *   **Wręcz:** Jeśli wróg jest na sąsiednim polu (dystans <= 1.5).
         *   Jednostki jazdy (np. Husaria) otrzymują bonus do obrażeń (szarża).
-4.  **Ruch:**
+4.  **Ruch i Leczenie:**
+    *   Jeśli agent jest ranny i znajduje się w pobliżu **Centrum Leczenia** (namioty medyczne), może udać się tam w celu regeneracji HP.
     *   Jeśli brak wroga w zasięgu wzroku, agent kieruje się ku **Celowi Strategicznemu** (losowy punkt w głębi terytorium wroga).
     *   Jeśli wróg jest widoczny, ale poza zasięgiem, agent wyznacza ścieżkę do niego.
 
@@ -80,19 +84,35 @@ Sercem symulacji jest cykl decyzyjny agenta (`step`), który wykonuje się w ka�
     *   Woda/Przeszkody: koszt bardzo wysoki lub nieprzekraczalny.
 *   Szansa na wykonanie ruchu w turze zależy od szybkości jednostki i trudności terenu:
     `szansa_ruchu = speed / (koszt_terenu * 5.0)`
-    Oznacza to, że ciężkie jednostki mogą "grzęznąć" w trudnym terenie.
 
 ### Wpływ Pogody
 Symulacja uwzględnia zmienne warunki atmosferyczne, które globalnie wpływają na rozgrywkę:
 1.  **Deszcz (Rain):**
     *   **Błoto:** Koszt ruchu na zwykłym terenie drastycznie rośnie (x2.5). Jazda i artyleria stają się bardzo powolne.
     *   **Mokry Proch:** Obrażenia jednostek strzeleckich (poza łucznikami) spadają o 70%. Zwiększa się szansa na niewypał.
+    *   **Widoczność:** Ograniczona do 12 pól.
 2.  **Mgła (Fog):**
-    *   Ogranicza zasięg widzenia jednostek z 20 do 6 pól, wymuszając walkę na krótki dystans.
+    *   **Widoczność:** Drastycznie ograniczona do 6 pól (standardowo 20), wymuszając walkę na krótki dystans ("mgła wojny").
 
 ---
 
-## 3. Aspekty Techniczne
+## 3. Funkcje Analityczne
+
+Projekt oferuje narzędzia do analizy przebiegu bitwy po jej zakończeniu.
+
+### Dashboard i Historia
+*   **Dashboard:** Główny widok symulacji, pokazujący mapę, jednostki oraz statystyki na żywo (liczebność armii, morale).
+*   **Historia Bitew:** Wyniki każdej symulacji są zapisywane. Użytkownik może przeglądać listę poprzednich starć, sprawdzając kto wygrał, czas trwania oraz straty.
+
+### Mapy Ciepła (Heatmaps)
+Dla każdej zakończonej symulacji generowana jest mapa ciepła, która wizualizuje:
+*   **Intensywność walk:** Gdzie ginęło najwięcej jednostek.
+*   **Ruch wojsk:** Główne szlaki przemieszczania się Armii Koronnej i Kozackiej.
+Pozwala to na strategiczną analizę, które obszary mapy (np. mosty, wzgórza) były kluczowe dla przebiegu starcia.
+
+---
+
+## 4. Aspekty Techniczne
 
 Projekt został zrealizowany w języku **Python** z wykorzystaniem nowoczesnych bibliotek do symulacji i wizualizacji.
 
@@ -102,17 +122,19 @@ Projekt został zrealizowany w języku **Python** z wykorzystaniem nowoczesnych 
 
 ### Kluczowe Biblioteki
 *   `Mesa`: Silnik symulacji agentowej (Agent-Based Modeling).
-*   `NumPy`: Wydajne operacje macierzowe na siatce terenu (mapa kosztów).
+*   `NumPy`: Wydajne operacje macierzowe na siatce terenu (mapa kosztów, heatmaps).
 *   `Pathfinding`: Biblioteka realizująca algorytm A* na siatce nawigacyjnej.
-*   `PyTMX`: Obsługa map stworzonych w edytorze **Tiled** (.tmx). Pozwala na odczytywanie warstw terenu i właściwości kafelków.
+*   `PyTMX`: Obsługa map stworzonych w edytorze **Tiled** (.tmx).
 
 ### Struktura Plików
 *   `simulation/agent.py`: Logika decyzyjna pojedynczego oddziału.
-*   `simulation/model.py`: Główna klasa symulacji, inicjalizacja mapy i jednostek.
-*   `app.py`: Serwer Flask obsługujący interfejs webowy.
+*   `simulation/model.py`: Główna klasa symulacji, inicjalizacja mapy, jednostek i pogody.
+*   `simulation/web_renderer.py`: Logika przygotowania danych dla frontendu.
+*   `app.py`: Serwer Flask obsługujący interfejs webowy i API.
 *   `assets/`: Grafiki jednostek i pliki mapy.
+*   `templates/`: Widoki HTML (Dashboard, Heatmap).
 
-## 4. Uruchomienie
+## 5. Uruchomienie
 
 1.  Zainstaluj wymagane biblioteki:
     ```bash
@@ -123,3 +145,5 @@ Projekt został zrealizowany w języku **Python** z wykorzystaniem nowoczesnych 
     python app.py
     ```
 3.  Otwórz przeglądarkę pod adresem: `http://127.0.0.1:5000`
+4.  Wybierz scenariusz i pogodę, a następnie rozpocznij symulację.
+
