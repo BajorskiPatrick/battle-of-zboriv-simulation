@@ -197,12 +197,12 @@ class MilitaryAgent(mesa.Agent):
     def receive_damage(self, amount):
         damage_reduction = min(amount - 1, self.random.randint(0, self.defense // 2))
         actual_damage = max(1, amount - damage_reduction)
-        self.hp -= actual_damage
+        self.hp = max(0, self.hp - actual_damage)
 
         morale_loss = actual_damage * 1.5
         if self.discipline > 80:
             morale_loss *= 0.7
-        self.morale -= morale_loss
+        self.morale = max(0, self.morale - morale_loss)
 
     def manage_fleeing(self):
         current_pos = self.get_pos_tuple()
