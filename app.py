@@ -584,7 +584,7 @@ def simulation_step():
 
         battle_status = simulation.get_battle_status()
 
-        healing_zones_data = [{"x": x, "y": y} for x, y in simulation.healing_tiles]
+        healing_zones_data = [{"x": x, "y": y} for x, y in simulation.healing_centers]
 
         return jsonify(
             {

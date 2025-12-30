@@ -123,9 +123,29 @@ class MilitaryAgent(mesa.Agent):
         else:
             self.path = []
 
+    def get_current_healing_center(self):
+        current_pos = self.get_pos_tuple()
+        for center in self.model.healing_centers:
+            if self.distance_to_pos(current_pos, center) <= 1:
+                return center
+        return None
+
     def calculate_path(self, target_pos_tuple):
         if not isinstance(target_pos_tuple, tuple):
             target_pos_tuple = (target_pos_tuple[0], target_pos_tuple[1])
+
+        current_center = self.get_current_healing_center()
+        if current_center:
+            entrance = self.model.get_healing_entrance(current_center)
+            if self.distance_to_pos(target_pos_tuple, current_center) > 1:
+                if self.get_pos_tuple() != entrance:
+                    target_pos_tuple = entrance
+
+                    if self.distance_to_pos(self.get_pos_tuple(), entrance) <= 1:
+                        self.path_target_pos = entrance
+                        self.path = [self.model.path_grid.node(entrance[0], entrance[1])]
+                        return
+
         self.path_target_pos = target_pos_tuple
         current_pos = self.get_pos_tuple()
 
@@ -184,6 +204,115 @@ class MilitaryAgent(mesa.Agent):
             morale_loss *= 0.7
         self.morale -= morale_loss
 
+    def manage_fleeing(self):
+        current_pos = self.get_pos_tuple()
+
+        if self.faction == "Armia Koronna":
+            centers = self.model.healing_centers
+            sorted_centers = sorted(centers, key=lambda z: self.distance_to_pos(current_pos, z))
+
+            target_center = None
+            for center in sorted_centers:
+                if not self.model.is_zone_full(center):
+                    target_center = center
+                    break
+
+            w = self.model.grid.width
+            h = self.model.grid.height
+            x, y = current_pos
+
+            d_left = x
+            d_right = w - 1 - x
+            d_top = y
+            d_bottom = h - 1 - y
+            dist_edge = min(d_left, d_right, d_top, d_bottom)
+
+            should_flee_to_edge = False
+            if target_center:
+                dist_heal = self.distance_to_pos(current_pos, target_center)
+                if dist_heal > 2 * dist_edge:
+                    should_flee_to_edge = True
+            else:
+                should_flee_to_edge = True
+
+            if not should_flee_to_edge and target_center:
+                entrance = self.model.get_healing_entrance(target_center)
+
+                if self.distance_to_pos(current_pos, target_center) > 1 and current_pos != entrance:
+                    self.calculate_path(entrance)
+
+                elif current_pos == entrance:
+                    cx, cy = target_center
+                    potential_entries = []
+                    for dx in [-1, 0, 1]:
+                        for dy in [-1, 0, 1]:
+                            tx, ty = cx + dx, cy + dy
+                            if 0 <= tx < w and 0 <= ty < h:
+                                if self.distance_to_pos(current_pos, (tx, ty)) <= 1:
+                                    potential_entries.append((tx, ty))
+
+                    target_entry = None
+                    for tile in potential_entries:
+                        cell_contents = self.model.grid.get_cell_list_contents([tile])
+                        if not any(isinstance(a, MilitaryAgent) for a in cell_contents):
+                            target_entry = tile
+                            break
+
+                    if target_entry:
+                        self.model.grid.move_agent(self, target_entry)
+                        self.path = []
+                        return
+                    else:
+                        return
+
+                else:
+                    cx, cy = target_center
+                    best_tile = target_center
+                    max_dist = -1
+
+                    for dx in [-1, 0, 1]:
+                        for dy in [-1, 0, 1]:
+                            tx, ty = cx + dx, cy + dy
+                            if 0 <= tx < w and 0 <= ty < h:
+                                cell_contents = self.model.grid.get_cell_list_contents([(tx, ty)])
+                                if not any(isinstance(a, MilitaryAgent) for a in cell_contents):
+                                    d = self.distance_to_pos(current_pos, (tx, ty))
+                                    if d > max_dist:
+                                        max_dist = d
+                                        best_tile = (tx, ty)
+                    self.calculate_path(best_tile)
+            else:
+                if dist_edge == d_left:
+                    target = (0, y)
+                elif dist_edge == d_right:
+                    target = (w - 1, y)
+                elif dist_edge == d_top:
+                    target = (x, 0)
+                else:
+                    target = (x, h - 1)
+                self.calculate_path(target)
+        else:
+            w = self.model.grid.width
+            h = self.model.grid.height
+            x, y = current_pos
+
+            d_left = x
+            d_right = w - 1 - x
+            d_top = y
+            d_bottom = h - 1 - y
+
+            dist_edge = min(d_left, d_right, d_top, d_bottom)
+
+            if dist_edge == d_left:
+                target = (0, y)
+            elif dist_edge == d_right:
+                target = (w - 1, y)
+            elif dist_edge == d_top:
+                target = (x, 0)
+            else:
+                target = (x, h - 1)
+            self.calculate_path(target)
+
     def step(self):
         if self.hp <= 0:
             return
@@ -195,87 +324,13 @@ class MilitaryAgent(mesa.Agent):
         if self.morale < panic_threshold and self.state != "FLEEING":
             if self.random.randint(0, 100) > self.discipline:
                 self.state = "FLEEING"
-
-                if self.faction == "Armia Koronna":
-                    centers = self.model.healing_centers
-                    sorted_centers = sorted(centers, key=lambda z: self.distance_to_pos(current_pos, z))
-
-                    target_center = None
-                    for center in sorted_centers:
-                        if not self.model.is_zone_full(center):
-                            target_center = center
-                            break
-
-                    w = self.model.grid.width
-                    h = self.model.grid.height
-                    x, y = current_pos
-
-                    d_left = x
-                    d_right = w - 1 - x
-                    d_top = y
-                    d_bottom = h - 1 - y
-                    dist_edge = min(d_left, d_right, d_top, d_bottom)
-
-                    should_flee_to_edge = False
-                    if target_center:
-                        dist_heal = self.distance_to_pos(current_pos, target_center)
-                        if dist_heal > 2 * dist_edge:
-                            should_flee_to_edge = True
-                    else:
-                        should_flee_to_edge = True
-
-                    if not should_flee_to_edge and target_center:
-                        cx, cy = target_center
-                        best_tile = target_center
-                        max_dist = -1
-
-                        for dx in [-1, 0, 1]:
-                            for dy in [-1, 0, 1]:
-                                tx, ty = cx + dx, cy + dy
-                                if 0 <= tx < w and 0 <= ty < h:
-                                    cell_contents = self.model.grid.get_cell_list_contents([(tx, ty)])
-                                    if not any(isinstance(a, MilitaryAgent) for a in cell_contents):
-                                        d = self.distance_to_pos(current_pos, (tx, ty))
-                                        if d > max_dist:
-                                            max_dist = d
-                                            best_tile = (tx, ty)
-                        self.calculate_path(best_tile)
-                    else:
-                        if dist_edge == d_left:
-                            target = (0, y)
-                        elif dist_edge == d_right:
-                            target = (w - 1, y)
-                        elif dist_edge == d_top:
-                            target = (x, 0)
-                        else:
-                            target = (x, h - 1)
-                        self.calculate_path(target)
-                else:
-                    w = self.model.grid.width
-                    h = self.model.grid.height
-                    x, y = current_pos
-
-                    d_left = x
-                    d_right = w - 1 - x
-                    d_top = y
-                    d_bottom = h - 1 - y
-
-                    dist_edge = min(d_left, d_right, d_top, d_bottom)
-
-                    if dist_edge == d_left:
-                        target = (0, y)
-                    elif dist_edge == d_right:
-                        target = (w - 1, y)
-                    elif dist_edge == d_top:
-                        target = (x, 0)
-                    else:
-                        target = (x, h - 1)
-                    self.calculate_path(target)
+                self.manage_fleeing()
 
         if self.state == "FLEEING":
             if not self.path and self.faction == "Armia Koronna":
-                pass
-            elif self.path:
+                self.manage_fleeing()
+
+            if self.path:
                 self.move()
             return
 
@@ -310,13 +365,22 @@ class MilitaryAgent(mesa.Agent):
                         self.move()
 
             elif distance <= 1.5:
-                self.state = "ATTACKING"
-                self.path = []
-                if self.random.random() < 0.8:
-                    dmg = self.melee_damage
-                    if "Husaria" in self.unit_type or "Jazda" in self.unit_type:
-                        dmg *= 1.5
-                    enemy.receive_damage(dmg)
+                enemy_pos = enemy.get_pos_tuple()
+                my_pos = self.get_pos_tuple()
+
+                enemy_on_tower = enemy_pos in self.model.healing_tiles
+                me_on_tower = my_pos in self.model.healing_tiles
+
+                if enemy_on_tower and not me_on_tower:
+                    pass
+                else:
+                    self.state = "ATTACKING"
+                    self.path = []
+                    if self.random.random() < 0.8:
+                        dmg = self.melee_damage
+                        if "Husaria" in self.unit_type or "Jazda" in self.unit_type:
+                            dmg *= 1.5
+                        enemy.receive_damage(dmg)
 
             else:
                 self.state = "MOVING"

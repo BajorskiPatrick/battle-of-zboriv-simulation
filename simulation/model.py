@@ -46,6 +46,9 @@ class BattleOfZborowModel(mesa.Model):
                     if 0 <= x < self.width and 0 <= y < self.height:
                         self.healing_tiles.append((x, y))
 
+        self.find_healing_entrances()
+
+
         self.unit_params = {
             "Husaria": {
                 "hp": 150,
@@ -235,6 +238,34 @@ class BattleOfZborowModel(mesa.Model):
 
         self.setup_agents()
 
+    def find_healing_entrances(self):
+        self.healing_entrances = {}
+        found_entrances = []
+
+        try:
+            terrain_layer = self.map_data.get_layer_by_name("Teren")
+            if terrain_layer:
+                for x, y, gid in terrain_layer.iter_data():
+                    if gid != 0:
+                        props = self.map_data.get_tile_properties_by_gid(gid)
+                        if props and props.get("healing_zone_entry"):
+                            found_entrances.append((x, y))
+        except Exception as e:
+            print(f"Error finding healing entrances: {e}")
+
+        for center in self.healing_centers:
+            if found_entrances:
+                closest = min(found_entrances, key=lambda e: max(abs(e[0]-center[0]), abs(e[1]-center[1])))
+                if max(abs(closest[0]-center[0]), abs(closest[1]-center[1])) <= 2:
+                    self.healing_entrances[center] = closest
+                else:
+                    self.healing_entrances[center] = (center[0], center[1] + 1)
+            else:
+                self.healing_entrances[center] = (center[0], center[1] + 1)
+
+    def get_healing_entrance(self, center):
+        return self.healing_entrances.get(center)
+
     def load_terrain_data(self):
         costs = np.ones((self.height, self.width), dtype=np.float32)
         try:
@@ -398,14 +429,10 @@ class BattleOfZborowModel(mesa.Model):
                                 agent.max_morale, agent.morale + morale_boost
                             )
 
-                        if agent.hp == agent.max_hp and agent.morale == agent.max_morale:
-                            agent.state = "IDLE"
-                            agent.path = []
-
                         if (
                             agent.state == "FLEEING"
                             and agent.hp > agent.max_hp * 0.6
-                            and agent.morale > 40
+                            and agent.morale > agent.max_morale * 0.6
                         ):
                             agent.state = "IDLE"
                             agent.path = []
