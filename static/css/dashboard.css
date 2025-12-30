@@ -37,9 +37,7 @@ body { margin:0; font-family: Segoe UI, Roboto, Arial, sans-serif; background: v
 .badge.draw { background:#333; color:#ddd; }
 @media (max-width: 1200px) { .db-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); } }
 @media (max-width: 800px) { .db-grid { grid-template-columns: 1fr; } }
-/* Ensure canvas scales within card */
 #winsChart { width: 100%; height: auto; display: block; }
-/* Wide and ultra-wide cards */
 .db-card.wide { grid-column: 1 / -1; }
 .db-card.ultra-wide { grid-column: 1 / -1; }
 #winsChartAnimated { width: 100%; height: auto; display: block; }

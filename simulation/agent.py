@@ -4,11 +4,6 @@ import random
 
 
 class MilitaryAgent(mesa.Agent):
-    """
-    Agent reprezentujący historyczny oddział wojskowy.
-    Obsługuje pogodę: mgła (wzrok), deszcz (niewypały).
-    """
-
     def __init__(self, unique_id, model, faction, unit_type):
         super().__init__(unique_id, model)
         self.faction = faction
@@ -23,7 +18,6 @@ class MilitaryAgent(mesa.Agent):
         self.discipline = params.get("discipline", 50)
         self.defense = params.get("defense", 0)
         self.speed = params.get("speed", 1)
-        # Dodane: szybkostrzelność i cooldown strzału
         self.rate_of_fire = params.get("rate_of_fire", 1.0)
         self.fire_cooldown = 0.0
 
@@ -59,14 +53,12 @@ class MilitaryAgent(mesa.Agent):
         return self.pos.x, self.pos.y
 
     def find_enemy(self):
-        # Bazowy zasięg
         vision_radius = 20
 
-        # Wpływ pogody na widoczność
         if self.model.weather == "fog":
-            vision_radius = 6  # Gęsta mgła
+            vision_radius = 6
         elif self.model.weather == "rain":
-            vision_radius = 12  # Ulewa
+            vision_radius = 12
 
         neighbors = self.model.grid.get_neighbors(
             self.pos, moore=True, include_center=False, radius=vision_radius
@@ -81,7 +73,6 @@ class MilitaryAgent(mesa.Agent):
         return None
 
     def find_any_enemy(self):
-        # Znajdowanie wroga na całej mapie (dla ruchu strategicznego)
         all_agents = self.model.schedule.agents
         enemies = [
             agent
@@ -107,25 +98,20 @@ class MilitaryAgent(mesa.Agent):
         next_pos_node = self.path[0]
         next_pos_tuple = (next_pos_node.x, next_pos_node.y)
 
-        # Sprawdź koszt terenu (błoto spowalnia)
         try:
             terrain_cost = self.model.terrain_costs[next_pos_tuple[1]][
                 next_pos_tuple[0]
             ]
-            # Im wyższy koszt, tym większa szansa na pominięcie ruchu
-            # speed=10 -> szybki, speed=1 -> wolny
             move_chance = self.speed / (terrain_cost * 5.0)
             if self.random.random() > move_chance:
-                return  # Jednostka grzęźnie w tym turze
+                return
         except:
             pass
 
-        # --- ZMIANA: Sprawdzenie kolizji z innymi jednostkami ---
         if self.model.grid.out_of_bounds(next_pos_tuple):
             self.path = []
             return
 
-        # Sprawdź, czy na polu docelowym stoi inna żywa jednostka
         cell_contents = self.model.grid.get_cell_list_contents(next_pos_tuple)
         blocking_unit = any(
             isinstance(obj, MilitaryAgent) and obj.hp > 0 for obj in cell_contents
@@ -135,8 +121,6 @@ class MilitaryAgent(mesa.Agent):
             self.model.grid.move_agent(self, next_pos_tuple)
             self.path.pop(0)
         else:
-            # Jeśli pole jest zajęte (ktoś wszedł tam przed nami w tej turze),
-            # czyścimy ścieżkę, co wymusi jej przeliczenie w następnym kroku (ominięcie przeszkody)
             self.path = []
 
     def calculate_path(self, target_pos_tuple):
@@ -153,26 +137,18 @@ class MilitaryAgent(mesa.Agent):
         start_node = self.model.path_grid.node(current_pos[0], current_pos[1])
         end_node = self.model.path_grid.node(target_pos_tuple[0], target_pos_tuple[1])
 
-        # --- ZMIANA: Traktuj inne jednostki jako przeszkody ---
-        # Zbieramy listę węzłów, które tymczasowo zablokujemy
         temp_blocked_nodes = []
 
-        # Iterujemy po wszystkich agentach, aby oznaczyć ich pozycje jako zajęte
         for agent in self.model.schedule.agents:
-            # Interesują nas tylko żywe jednostki wojskowe, inne niż my sami
             if isinstance(agent, MilitaryAgent) and agent.hp > 0 and agent != self:
                 pos = agent.get_pos_tuple()
-                # WAŻNE: Nie blokujemy celu podróży (np. jeśli idziemy atakować wroga, musimy móc wyznaczyć ścieżkę do jego sąsiedztwa)
                 if pos != target_pos_tuple:
                     node = self.model.path_grid.node(pos[0], pos[1])
-                    # Jeśli węzeł był chodliwy, blokujemy go tymczasowo
                     if node.walkable:
                         node.walkable = False
                         temp_blocked_nodes.append(node)
-        # -------------------------------------------------------
 
         if not end_node.walkable:
-            # Jeśli cel jest zablokowany (np. ściana), przywracamy stan i kończymy
             for node in temp_blocked_nodes:
                 node.walkable = True
             self.path = []
@@ -180,10 +156,8 @@ class MilitaryAgent(mesa.Agent):
 
         path, _ = finder.find_path(start_node, end_node, self.model.path_grid)
 
-        # --- ZMIANA: Przywracamy stan siatki dla innych agentów ---
         for node in temp_blocked_nodes:
             node.walkable = True
-        # -------------------------------------------------------
 
         self.model.path_grid.cleanup()
         self.path = path[1:] if path else []
@@ -213,21 +187,17 @@ class MilitaryAgent(mesa.Agent):
     def step(self):
         if self.hp <= 0:
             return
-        # Tick cooldownu strzału (1 krok symulacji = 1 jednostka czasu)
         if self.fire_cooldown > 0:
             self.fire_cooldown = max(0.0, self.fire_cooldown - 1.0)
         current_pos = self.get_pos_tuple()
 
-        # 1. Panika
         panic_threshold = 25 - (self.discipline / 5)
         if self.morale < panic_threshold and self.state != "FLEEING":
             if self.random.randint(0, 100) > self.discipline:
                 self.state = "FLEEING"
 
                 if self.faction == "Armia Koronna":
-                    # Polacy uciekają do najbliższego punktu leczenia (obozu)
                     zones = self.model.healing_zones
-                    # Znajdź strefę najbliższą aktualnej pozycji
                     closest_zone = min(
                         zones, key=lambda z: self.distance_to_pos(current_pos, z)
                     )
@@ -241,30 +211,24 @@ class MilitaryAgent(mesa.Agent):
                     self.calculate_path((current_pos[0], safe_y))
 
         if self.state == "FLEEING":
-            # Jeśli dotarliśmy do celu ucieczki (punktu leczenia)
             if not self.path and self.faction == "Armia Koronna":
-                # Jesteśmy w punkcie leczenia - czekamy na uleczenie przez model (apply_camp_healing)
                 pass
             elif self.path:
                 self.move()
             return
 
-        # 2. Walka
         enemy = self.find_enemy()
 
         if enemy:
             distance = self.distance_to(enemy)
 
-            # Walka dystansowa
             if 1 < distance <= self.attack_range and self.ranged_damage > 0:
                 misfire_chance = 0.4 if self.model.weather == "rain" else 0.0
 
                 if self.ammo > 0:
-                    # Sprawdź cooldown szybkostrzelności
                     if self.fire_cooldown <= 0 and self.random.random() < (0.7 - misfire_chance):
                         self.state = "ATTACKING"
                         self.ammo -= 1
-                        # Ustaw cooldown po strzale: przerwa = 1 / rate_of_fire
                         self.fire_cooldown = max(0.1, 1.0 / max(0.1, self.rate_of_fire))
 
                         enemy_pos = enemy.get_pos_tuple()
@@ -274,9 +238,8 @@ class MilitaryAgent(mesa.Agent):
                             dmg *= 0.6
                         enemy.receive_damage(dmg)
                     else:
-                        pass  # niewypał, celowanie lub przeładowanie
+                        pass
                 else:
-                    # Brak amunicji -> szarża
                     self.state = "MOVING"
                     epos = enemy.get_pos_tuple()
                     if self.should_recalculate_path(epos):
@@ -284,18 +247,15 @@ class MilitaryAgent(mesa.Agent):
                     if self.path:
                         self.move()
 
-            # Walka wręcz
-            elif distance <= 1.5:  # Zasięg 1.5 łapie sąsiednie i ukośne
+            elif distance <= 1.5:
                 self.state = "ATTACKING"
                 self.path = []
                 if self.random.random() < 0.8:
                     dmg = self.melee_damage
-                    # Bonus szarży
                     if "Husaria" in self.unit_type or "Jazda" in self.unit_type:
                         dmg *= 1.5
                     enemy.receive_damage(dmg)
 
-            # Ruch do wroga
             else:
                 self.state = "MOVING"
                 epos = enemy.get_pos_tuple()
@@ -306,7 +266,6 @@ class MilitaryAgent(mesa.Agent):
                     self.move()
 
         else:
-            # 3. Ruch strategiczny
             self.state = "MOVING_TO_STRATEGIC"
             distant_enemy = self.find_any_enemy()
             target = (
