@@ -1,10 +1,7 @@
 mesa==2.3.2
-arcade
 pytmx
 numpy
 pathfinding
-pygame
 flask
 flask-cors
 pillow
-pdfplumber
