@@ -28,12 +28,12 @@
  </tile>
  <tile id="19">
   <properties>
-   <property name="movement_cost" type="float" value="10"/>
+   <property name="movement_cost" type="float" value="90"/>
   </properties>
  </tile>
  <tile id="22">
   <properties>
-   <property name="movement_cost" type="float" value="20"/>
+   <property name="movement_cost" type="float" value="50"/>
   </properties>
  </tile>
  <tile id="40">
@@ -58,7 +58,7 @@
  </tile>
  <tile id="50">
   <properties>
-   <property name="movement_cost" type="float" value="10"/>
+   <property name="movement_cost" type="float" value="90"/>
   </properties>
  </tile>
  <tile id="51">
@@ -68,17 +68,18 @@
  </tile>
  <tile id="52">
   <properties>
-   <property name="movement_cost" type="float" value="10"/>
+   <property name="movement_cost" type="float" value="90"/>
   </properties>
  </tile>
  <tile id="53">
   <properties>
+   <property name="healing_zone_entry" type="bool" value="true"/>
    <property name="movement_cost" type="float" value="1"/>
   </properties>
  </tile>
  <tile id="83">
   <properties>
-   <property name="movement_cost" type="float" value="10"/>
+   <property name="movement_cost" type="float" value="90"/>
   </properties>
  </tile>
  <tile id="116">
