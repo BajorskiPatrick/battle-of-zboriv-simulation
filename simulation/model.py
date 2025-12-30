@@ -379,6 +379,10 @@ class BattleOfZborowModel(mesa.Model):
                                 agent.max_morale, agent.morale + morale_boost
                             )
 
+                        if agent.hp == agent.max_hp and agent.morale == agent.max_morale:
+                            agent.state = "IDLE"
+                            agent.path = []
+
                         if (
                             agent.state == "FLEEING"
                             and agent.hp > agent.max_hp * 0.6
