@@ -227,7 +227,7 @@ class MilitaryAgent(mesa.Agent):
                     if not should_flee_to_edge and target_center:
                         cx, cy = target_center
                         best_tile = target_center
-                        min_dist = float('inf')
+                        max_dist = -1
 
                         for dx in [-1, 0, 1]:
                             for dy in [-1, 0, 1]:
@@ -236,8 +236,8 @@ class MilitaryAgent(mesa.Agent):
                                     cell_contents = self.model.grid.get_cell_list_contents([(tx, ty)])
                                     if not any(isinstance(a, MilitaryAgent) for a in cell_contents):
                                         d = self.distance_to_pos(current_pos, (tx, ty))
-                                        if d < min_dist:
-                                            min_dist = d
+                                        if d > max_dist:
+                                            max_dist = d
                                             best_tile = (tx, ty)
                         self.calculate_path(best_tile)
                     else:
