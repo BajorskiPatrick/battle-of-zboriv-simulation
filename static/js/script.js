@@ -8,18 +8,14 @@ let initialUnitsConfig = null;
 let canvas = document.getElementById('simulationCanvas');
 let ctx = canvas.getContext('2d');
 
-// Tooltip variables
 let currentAgents = [];
 let tooltip = null;
 
-// Cache dla załadowanych obrazków sprite'ów
 let spriteCache = {};
 
-// Dane mapy z Tiled
 let mapData = null;
 let tilesetImage = null;
 
-// --- CUSTOM BATTLE LOGIC ---
 let customUnits = {};
 let customErrorTimeout = null;
 
@@ -46,7 +42,6 @@ function hideCustomError() {
 }
 
 function showCustomBattle() {
-    // Hide other pages
     document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
     document.getElementById('customBattlePage').classList.add('active');
 
@@ -57,7 +52,6 @@ function showCustomBattle() {
     
     hideCustomError();
     
-    // Initialize counts if empty
     if (Object.keys(customUnits).length === 0) {
         for (const unit in unitTypes) {
             customUnits[unit] = 0;
@@ -115,7 +109,6 @@ function updateCustomUnit(name, delta) {
 }
 
 function startCustomSimulation() {
-    // Filter out zero counts
     const config = {};
     let crownTotal = 0;
     let cossackTotal = 0;
@@ -146,7 +139,6 @@ function startCustomSimulation() {
     const weatherSelect = document.getElementById('customWeatherSelect');
     const weather = weatherSelect ? weatherSelect.value : 'clear';
 
-    // Start simulation via API
     fetch('/api/start-simulation', {
         method: 'POST',
         headers: {
@@ -165,10 +157,8 @@ function startCustomSimulation() {
             currentScenarioName = "Własna Bitwa";
             initialUnitsConfig = config;
             
-            // Ustaw pogodę
             setWeather(weather);
 
-            // Switch to simulation view
             document.querySelector('.main-grid').classList.add('simulation-active');
             document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
             document.querySelector('.navigation-buttons').style.display = 'none';
@@ -176,7 +166,6 @@ function startCustomSimulation() {
             document.getElementById('controlPanel').style.display = 'block';
             document.getElementById('battleStats').style.display = 'block';
             
-            // Start loop
             if (simulationInterval) clearInterval(simulationInterval);
             simulationInterval = setInterval(updateSimulation, 200);
             
@@ -186,7 +175,6 @@ function startCustomSimulation() {
     .catch(error => console.error('Error starting custom simulation:', error));
 }
 
-// Funkcja do ładowania sprite'a
 function loadSprite(spritePath) {
     return new Promise((resolve, reject) => {
         if (spriteCache[spritePath]) {
@@ -203,26 +191,22 @@ function loadSprite(spritePath) {
             console.error(`Failed to load sprite: ${spritePath}`, e);
             resolve(null);
         };
-        // Dodaj / na początku dla ścieżki bezwzględnej
         const fullPath = spritePath.startsWith('/') ? spritePath : '/' + spritePath;
         img.src = fullPath;
     });
 }
 
-// Preload wszystkich sprite'ów przy starcie
 async function preloadSprites() {
     const promises = Object.values(unitTypes).map(unit => loadSprite(unit.sprite_path));
     await Promise.all(promises);
     console.log('Sprites preloaded:', Object.keys(spriteCache).length);
 }
 
-// Załaduj dane mapy z Tiled
 async function loadMapData() {
     try {
         const response = await fetch('/api/map-data');
         mapData = await response.json();
         
-        // Sprawdź czy backend zwrócił błąd
         if (mapData.error) {
             console.error("Backend error:", mapData.error);
             return;
@@ -238,7 +222,6 @@ async function loadMapData() {
             return;
         }
 
-        // Załaduj tileset image
         tilesetImage = new Image();
         tilesetImage.onload = () => {
             console.log('Tileset image loaded successfully');
@@ -254,7 +237,6 @@ async function loadMapData() {
     }
 }
 
-// Załaduj dostępne typy jednostek
 async function loadUnitTypes() {
     try {
         const response = await fetch('/api/unit-types');
@@ -262,7 +244,6 @@ async function loadUnitTypes() {
         
         renderLegend();
         
-        // Preload sprite'ów i mapy
         await preloadSprites();
         await loadMapData();
     } catch (error) {
@@ -270,7 +251,6 @@ async function loadUnitTypes() {
     }
 }
 
-// Załaduj scenariusze
 async function loadScenarios() {
     try {
         const response = await fetch('/api/scenarios');
@@ -281,7 +261,6 @@ async function loadScenarios() {
     }
 }
 
-// Renderuj scenariusze jako kafelki
 function renderScenarios() {
     const grid = document.getElementById('scenariosGrid');
     grid.innerHTML = '';
@@ -308,7 +287,6 @@ function renderScenarios() {
         let totalCossack = 0;
         
         for (const [unitName, count] of Object.entries(scenario.units)) {
-            // --- POPRAWKA: Ignoruj klucze konfiguracyjne (zaczynające się od _) ---
             if (unitName.startsWith('_')) continue;
             
             if (count > 0) {
@@ -383,7 +361,6 @@ function renderScenarios() {
     }
 }
 
-// Wybierz scenariusz i uruchom symulację
 async function selectScenario(scenarioId) {
     const scenario = scenarios[scenarioId];
     if (!scenario) return;
@@ -393,23 +370,20 @@ async function selectScenario(scenarioId) {
     
     console.log('Wybrano scenariusz:', scenario.name, 'Pogoda:', weather);
     
-    // Zapisz informacje o scenariuszu
     currentScenarioId = scenarioId;
     currentScenarioName = scenario.name;
     initialUnitsConfig = {...scenario.units};
     
-    // Pokaż loader
     document.getElementById('loader').classList.add('active');
     
     try {
-        // Uruchom symulację z konfiguracją scenariusza
         const response = await fetch('/api/start-simulation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 units_config: scenario.units,
                 scenario_id: scenarioId,
-                weather: weather // <-- Przekazujemy pogodę
+                weather: weather
             })
         });
         
@@ -417,10 +391,8 @@ async function selectScenario(scenarioId) {
         console.log('Start result:', result);
         
         if (response.ok) {
-            // Ustaw pogodę
             setWeather(weather);
 
-            // Przełącz widok
             document.querySelector('.main-grid').classList.add('simulation-active');
             document.getElementById('scenariosPage').style.display = 'none';
             document.querySelector('.navigation-buttons').style.display = 'none';
@@ -430,7 +402,6 @@ async function selectScenario(scenarioId) {
             updateStatus('running', 'Symulacja w toku');
             document.getElementById('battleStats').style.display = 'block';
             
-            // Rozpocznij odświeżanie
             simulationInterval = setInterval(updateSimulation, 200);
             console.log('Simulation interval started');
         }
@@ -442,21 +413,16 @@ async function selectScenario(scenarioId) {
     }
 }
 
-// Powrót do wyboru scenariuszy
 async function backToScenarios() {
-    // Zatrzymaj symulację jeśli działa
     if (simulationInterval) {
         clearInterval(simulationInterval);
         simulationInterval = null;
     }
     
-    // Reset stanu pauzy
     isPaused = false;
     
-    // Wyczyść symulację
     await clearSimulation();
     
-    // Przełącz widok
     document.querySelector('.main-grid').classList.remove('simulation-active');
     document.querySelector('.navigation-buttons').style.display = '';
     document.getElementById('scenariosPage').style.display = '';
@@ -465,7 +431,6 @@ async function backToScenarios() {
     document.getElementById('simulationArea').style.display = 'none';
     document.getElementById('battleStats').style.display = 'none';
     
-    // Reset przycisku pauzy
     const pauseBtn = document.getElementById('pauseBtn');
     if (pauseBtn) {
         pauseBtn.textContent = '⏸️ Pauza';
@@ -473,7 +438,6 @@ async function backToScenarios() {
         pauseBtn.classList.add('btn-stop');
     }
     
-    // Wyczyść canvas
     if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
@@ -481,13 +445,10 @@ async function backToScenarios() {
     updateStatus('idle', 'Gotowa do startu');
 }
 
-// Wyczyść symulację
 async function clearSimulation() {
     try {
-        // Zatrzymaj symulację przez API
         await fetch('/api/stop-simulation', { method: 'POST' });
         
-        // Wyczyść interwał jeśli istnieje
         if (simulationInterval) {
             clearInterval(simulationInterval);
             simulationInterval = null;
@@ -500,7 +461,6 @@ async function clearSimulation() {
 }
 
 
-// Renderuj legendę z podziałem na frakcje
 function renderLegend() {
     const crownContainer = document.getElementById('crownLegendContainer');
     const cossackContainer = document.getElementById('cossackLegendContainer');
@@ -549,19 +509,15 @@ function renderLegend() {
     }
 }
 
-// Przełączanie między stronami
 function showPage(pageName) {
-    // Ukryj wszystkie strony
     document.querySelectorAll('.page-container').forEach(page => {
         page.classList.remove('active');
     });
     
-    // Usuń aktywny stan z wszystkich przycisków
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     
-    // Pokaż wybraną stronę
     if (pageName === 'scenarios') {
         document.getElementById('scenariosPage').classList.add('active');
         document.getElementById('navScenarios').classList.add('active');
@@ -572,7 +528,6 @@ function showPage(pageName) {
 }
 
 
-// Przełącz pauzę symulacji
 function togglePause() {
     isPaused = !isPaused;
     const pauseBtn = document.getElementById('pauseBtn');
@@ -590,7 +545,6 @@ function togglePause() {
     }
 }
 
-// Zatrzymaj symulację całkowicie i wróć do menu
 async function stopSimulation() {
     try {
         await fetch('/api/stop-simulation', { method: 'POST' });
@@ -600,25 +554,20 @@ async function stopSimulation() {
     }
 }
 
-// Aktualizuj stan symulacji
 async function updateSimulation() {
     try {
-        // Jeśli jest pauza, renderuj tylko bez pobierania nowych danych
         if (isPaused) {
             return;
         }
         
-        // Sprawdź czy interval jest aktywny (jeśli nie, symulacja została zatrzymana)
         if (!simulationInterval) {
             return;
         }
         
         const response = await fetch('/api/simulation-step');
         
-        // Sprawdź czy odpowiedź jest OK
         if (!response.ok) {
             console.warn('Simulation step failed:', response.status);
-            // Jeśli błąd 400, zatrzymaj interval
             if (response.status === 400) {
                 if (simulationInterval) {
                     clearInterval(simulationInterval);
@@ -630,13 +579,11 @@ async function updateSimulation() {
         
         const data = await response.json();
         
-        // Sprawdź czy otrzymaliśmy błąd
         if (data.error) {
             console.warn('Simulation error:', data.error);
             return;
         }
         
-        // Sprawdź czy otrzymaliśmy poprawne dane
         if (!data || !data.stats) {
             console.warn('Invalid simulation data received');
             return;
@@ -644,21 +591,17 @@ async function updateSimulation() {
         
         console.log('Simulation step:', data.stats);
         
-        // Aktualizuj canvas
         renderSimulation(data);
         
-        // Aktualizuj statystyki
         document.getElementById('crownCount').textContent = data.stats.crown_count;
         document.getElementById('cossackCount').textContent = data.stats.cossack_count;
         document.getElementById('totalCount').textContent = data.stats.total_agents;
         
-        // Sprawdź status bitwy
         if (data.battle_status && data.battle_status.status === 'finished') {
             if (simulationInterval) {
                 clearInterval(simulationInterval);
                 simulationInterval = null;
             }
-            // Przekaż również statystyki do modala
             data.battle_status.crown_count = data.stats.crown_count;
             data.battle_status.cossack_count = data.stats.cossack_count;
             data.battle_status.total_agents = data.stats.total_agents;
@@ -669,13 +612,11 @@ async function updateSimulation() {
     }
 }
 
-// Pokaż modal zwycięstwa
 async function showVictoryModal(battleStatus) {
     const modal = document.getElementById('victoryModal');
     const winnerEl = document.getElementById('victoryWinner');
     const statsEl = document.getElementById('victoryStats');
     
-    // Określ kolorystykę i emotikony
     let winnerClass = '';
     let emoji = '';
     let winnerText = '';
@@ -694,7 +635,6 @@ async function showVictoryModal(battleStatus) {
     winnerEl.className = `victory-winner ${winnerClass}`;
     winnerEl.textContent = winnerText;
     
-    // Statystyki
     if (battleStatus.winner !== 'Remis') {
         statsEl.innerHTML = `
             <div>Pozostało jednostek: <strong>${battleStatus.survivors}</strong></div>
@@ -707,17 +647,14 @@ async function showVictoryModal(battleStatus) {
         `;
     }
     
-    // Zapisz wynik bitwy do JSON
     await saveBattleResult(battleStatus);
     
     modal.classList.add('active');
     updateStatus('stopped', 'Bitwa zakończona');
 }
 
-// Zapisz wynik bitwy
 async function saveBattleResult(battleStatus) {
     try {
-        // Pobierz aktualne statystyki
         const crownCount = parseInt(document.getElementById('crownCount').textContent) || 0;
         const cossackCount = parseInt(document.getElementById('cossackCount').textContent) || 0;
         const totalCount = parseInt(document.getElementById('totalCount').textContent) || 0;
@@ -749,29 +686,24 @@ async function saveBattleResult(battleStatus) {
     }
 }
 
-// Zamknij modal zwycięstwa
 function closeVictoryModal() {
     const modal = document.getElementById('victoryModal');
     modal.classList.remove('active');
 }
 
-// Restart symulacji
 function restartSimulation() {
     closeVictoryModal();
     backToScenarios();
 }
 
-// --- SYSTEM POGODY ---
-let currentWeather = 'clear'; // 'clear', 'rain', 'fog'
+let currentWeather = 'clear';
 let weatherNeedsInit = false;
 let rainParticles = [];
 let fogParticles = [];
 
-// Inicjalizacja deszczu
 function initRain(width, height) {
     rainParticles = [];
-    // Zwiększona gęstość deszczu (mniejsza wartość = więcej kropel)
-    const density = 1000; 
+    const density = 1000;
     const count = Math.floor((width * height) / density);
     
     console.log(`Inicjalizacja deszczu: ${count} kropel dla obszaru ${width}x${height}`);
@@ -780,17 +712,15 @@ function initRain(width, height) {
         rainParticles.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            speed: Math.random() * 15 + 10, // Szybszy deszcz
-            length: Math.random() * 15 + 10 // Dłuższe krople
+            speed: Math.random() * 15 + 10,
+            length: Math.random() * 15 + 10
         });
     }
 }
 
-// Inicjalizacja mgły
 function initFog(width, height) {
     fogParticles = [];
-    // Mniej cząsteczek, ale bardzo duże - tworzą "zagęszczenia" mgły
-    const count = 20; 
+    const count = 20;
     
     console.log(`Inicjalizacja mgły: ${count} dużych chmur dla obszaru ${width}x${height}`);
 
@@ -798,31 +728,27 @@ function initFog(width, height) {
         fogParticles.push({
             x: Math.random() * width,
             y: Math.random() * height,
-            vx: (Math.random() - 0.5) * 0.2, // Bardzo wolny ruch
+            vx: (Math.random() - 0.5) * 0.2,
             vy: (Math.random() - 0.5) * 0.2,
-            radius: Math.random() * 200 + 100, // Bardzo duże chmury
+            radius: Math.random() * 200 + 100,
             alpha: Math.random() * 0.1 + 0.05
         });
     }
 }
 
-// Rysowanie i aktualizacja deszczu
 function drawRain(ctx, width, height) {
     if (rainParticles.length === 0) return;
 
-    ctx.strokeStyle = 'rgba(200, 220, 255, 0.8)'; // Bardzo jasny niebieski, prawie biały
-    ctx.lineWidth = 2; // Grubsze linie dla lepszej widoczności
+    ctx.strokeStyle = 'rgba(200, 220, 255, 0.8)';
+    ctx.lineWidth = 2;
     ctx.beginPath();
     
     for (let p of rainParticles) {
-        // Rysuj linię
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(p.x, p.y + p.length);
         
-        // Aktualizuj pozycję
         p.y += p.speed;
         
-        // Resetuj jak spadnie na dół
         if (p.y > height) {
             p.y = -p.length;
             p.x = Math.random() * width;
@@ -831,16 +757,12 @@ function drawRain(ctx, width, height) {
     ctx.stroke();
 }
 
-// Rysowanie i aktualizacja mgły
 function drawFog(ctx, width, height) {
-    // 1. Jednolita warstwa bazowa (pokrywa całą mapę)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; 
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.fillRect(0, 0, width, height);
 
-    // 2. Ruchome zagęszczenia
     for (let p of fogParticles) {
         ctx.beginPath();
-        // Gradient dla miękkich krawędzi
         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
         gradient.addColorStop(0, `rgba(255, 255, 255, ${p.alpha})`);
         gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
@@ -849,11 +771,9 @@ function drawFog(ctx, width, height) {
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fill();
         
-        // Aktualizuj pozycję (dryfowanie)
         p.x += p.vx;
         p.y += p.vy;
         
-        // Zawijanie na krawędziach ekranu (z marginesem na promień)
         if (p.x < -p.radius) p.x = width + p.radius;
         if (p.x > width + p.radius) p.x = -p.radius;
         if (p.y < -p.radius) p.y = height + p.radius;
@@ -861,26 +781,20 @@ function drawFog(ctx, width, height) {
     }
 }
 
-// Funkcja przełączająca pogodę (do podpięcia pod przyciski)
 window.setWeather = function(type) {
     currentWeather = type;
     weatherNeedsInit = true;
 };
 
-// Renderuj symulację na canvas
 function renderSimulation(data) {
     const tileSize = 16;
     const scale = 2;
     
-    // Update current agents for tooltip
     currentAgents = data.agents || [];
 
-    // Ustaw rozmiar canvas
     canvas.width = data.map_width * tileSize * scale;
     canvas.height = data.map_height * tileSize * scale;
 
-    // Inicjalizacja pogody jeśli potrzebna (po ustawieniu rozmiaru canvas)
-    // Dodano sprawdzenie pustych tablic, aby wymusić inicjalizację jeśli coś poszło nie tak
     if (weatherNeedsInit || (currentWeather === 'rain' && rainParticles.length === 0) || (currentWeather === 'fog' && fogParticles.length === 0)) {
         if (currentWeather === 'rain') initRain(canvas.width, canvas.height);
         else if (currentWeather === 'fog') initFog(canvas.width, canvas.height);
@@ -888,23 +802,19 @@ function renderSimulation(data) {
         weatherNeedsInit = false;
     }
     
-    // Wyczyść canvas - tło pola bitwy
     ctx.fillStyle = '#2d5016';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Debug: Sprawdź stan załadowania tilesettu
     console.log('Rendering map - mapData:', !!mapData, 'tilesetImage:', !!tilesetImage, 'complete:', tilesetImage?.complete, 'src:', tilesetImage?.src);
     
-    // Rysuj mapę z Tiled jeśli jest załadowana
     if (mapData && tilesetImage && tilesetImage.complete) {
         const tilesPerRow = mapData.tileset_columns || 32;
         const spacing = mapData.tileset_spacing || 0;
         const firstgid = mapData.tileset_firstgid || 1;
         
         let tilesDrawn = 0;
-        let debugLog = false; // Loguj tylko raz na 100 klatek
+        let debugLog = false;
         
-        // Renderuj kafelki z obsługą transformacji
         for (let y = 0; y < mapData.height; y++) {
             const row = mapData.tiles[y];
             const flagsRow = mapData.flip_flags ? mapData.flip_flags[y] : null;
@@ -916,37 +826,28 @@ function renderSimulation(data) {
             
             for (let x = 0; x < mapData.width; x++) {
                 const gid = row[x];
-                if (gid === 0 || gid === undefined || gid === null) continue; // Pusty tile
+                if (gid === 0 || gid === undefined || gid === null) continue;
                 
-                // Oblicz pozycję w tilesetcie
                 const tileId = gid - firstgid;
-                if (tileId < 0) continue; // Nieprawidłowe GID
+                if (tileId < 0) continue;
                 
                 const col = tileId % tilesPerRow;
                 const tilesetRow = Math.floor(tileId / tilesPerRow);
                 
-                // Uwzględnij spacing między kafelkami
                 const srcX = col * (mapData.tile_width + spacing);
                 const srcY = tilesetRow * (mapData.tile_height + spacing);
                 
-                // Pozycja na canvas
                 const destX = x * tileSize * scale;
                 const destY = y * tileSize * scale;
                 
-                // Pobierz flagi transformacji
                 const flags = flagsRow ? flagsRow[x] : {h: false, v: false, d: false};
                 
-                // Zapisz stan contextu
                 ctx.save();
                 
-                // Zastosuj transformacje jeśli są flagi
                 if (flags.h || flags.v || flags.d) {
-                    // Przesuń do środka kafelka
                     ctx.translate(destX + (tileSize * scale) / 2, destY + (tileSize * scale) / 2);
                     
-                    // Zastosuj transformacje zgodnie z Tiled
                     if (flags.d) {
-                        // Diagonal flip = rotate 90° + flip horizontal
                         ctx.rotate(Math.PI / 2);
                         ctx.scale(-1, 1);
                     }
@@ -957,7 +858,6 @@ function renderSimulation(data) {
                         ctx.scale(1, -1);
                     }
                     
-                    // Rysuj z centrum jako origin
                     ctx.drawImage(
                         tilesetImage,
                         srcX, srcY, mapData.tile_width, mapData.tile_height,
@@ -965,7 +865,6 @@ function renderSimulation(data) {
                         tileSize * scale, tileSize * scale
                     );
                 } else {
-                    // Rysuj bez transformacji
                     ctx.drawImage(
                         tilesetImage,
                         srcX, srcY, mapData.tile_width, mapData.tile_height,
@@ -982,7 +881,6 @@ function renderSimulation(data) {
             console.warn('No tiles drawn! Check mapData.tiles structure');
         }
     } else {
-        // Fallback - siatka jeśli mapa nie załadowana
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.lineWidth = 0.5;
         for (let x = 0; x < canvas.width; x += tileSize * scale) {
@@ -999,28 +897,23 @@ function renderSimulation(data) {
         }
     }
     
-    // Rysuj strefy startowe (półprzezroczyste) - tylko obramowania
-    // Strefa Kozacy/Tatarzy (góra - początek mapy, y blisko 0)
     ctx.strokeStyle = 'rgba(50, 50, 200, 0.5)';
     ctx.lineWidth = 3;
     const cossackZoneY = 15 * tileSize * scale;
     ctx.strokeRect(0, 0, canvas.width, cossackZoneY);
     
-    // Strefa Koronna (dół - koniec mapy, y blisko height)
     ctx.strokeStyle = 'rgba(200, 50, 50, 0.5)';
     const crownZoneY = (data.map_height - 15) * tileSize * scale;
     ctx.strokeRect(0, crownZoneY, canvas.width, canvas.height - crownZoneY);
     
-    // Rysuj jednostki - sprawdź czy agents istnieje
     if (data.agents && Array.isArray(data.agents)) {
         data.agents.forEach(agent => {
         const x = (agent.x + 0.5) * tileSize * scale;
-        const y = (agent.y + 0.5) * tileSize * scale; // Bez odwracania osi Y
+        const y = (agent.y + 0.5) * tileSize * scale;
         
-        // Rysuj sprite jeśli jest dostępny
         const sprite = spriteCache[agent.sprite_path];
         if (sprite) {
-            const spriteSize = tileSize * scale * 2.5; // Zwiększono z 1.5 do 2.5
+            const spriteSize = tileSize * scale * 2.5;
             ctx.drawImage(sprite, 
                 x - spriteSize / 2, 
                 y - spriteSize / 2, 
@@ -1028,7 +921,6 @@ function renderSimulation(data) {
                 spriteSize
             );
         } else {
-            // Fallback - kolorowy kształt na podstawie frakcji i typu
             const baseColor = agent.faction === 'Armia Koronna' ? '#d4a5a5' : '#a5b4d4';
             const size = 8 * scale;
             
@@ -1036,13 +928,10 @@ function renderSimulation(data) {
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
             
-            // Różne kształty dla różnych typów jednostek
             if (agent.unit_type.includes('Piechota')) {
-                // Kwadrat dla piechoty
                 ctx.fillRect(x - size, y - size, size * 2, size * 2);
                 ctx.strokeRect(x - size, y - size, size * 2, size * 2);
             } else if (agent.unit_type.includes('Jazda') || agent.unit_type.includes('Cavalry')) {
-                // Trójkąt dla jazdy
                 ctx.beginPath();
                 ctx.moveTo(x, y - size * 1.5);
                 ctx.lineTo(x - size * 1.3, y + size);
@@ -1051,7 +940,6 @@ function renderSimulation(data) {
                 ctx.fill();
                 ctx.stroke();
             } else if (agent.unit_type.includes('Dragonia')) {
-                // Romb dla dragonii
                 ctx.beginPath();
                 ctx.moveTo(x, y - size * 1.5);
                 ctx.lineTo(x + size, y);
@@ -1061,7 +949,6 @@ function renderSimulation(data) {
                 ctx.fill();
                 ctx.stroke();
             } else {
-                // Koło dla pozostałych
                 ctx.beginPath();
                 ctx.arc(x, y, size, 0, Math.PI * 2);
                 ctx.fill();
@@ -1069,53 +956,41 @@ function renderSimulation(data) {
             }
         }
         
-        // Paski HP i morale
         const barWidth = 28 * scale;
         const barHeight = 5 * scale;
         
-        // HP (zielony) - dolny
         const hpY = y - 16 * scale;
         const hpPercent = agent.hp / agent.max_hp;
         
-        // Tło paska HP
         ctx.fillStyle = '#c00';
         ctx.fillRect(x - barWidth/2, hpY - barHeight/2, barWidth, barHeight);
         
-        // Wypełnienie paska HP
         if (hpPercent > 0) {
             ctx.fillStyle = '#0c0';
             ctx.fillRect(x - barWidth/2, hpY - barHeight/2, barWidth * hpPercent, barHeight);
         }
         
-        // Ramka paska HP
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 1;
         ctx.strokeRect(x - barWidth/2, hpY - barHeight/2, barWidth, barHeight);
         
-        // Morale (cyan) - górny
         const moraleY = y - 24 * scale;
         const moralePercent = agent.morale / agent.max_morale;
         
-        // Tło paska morale
         ctx.fillStyle = '#666';
         ctx.fillRect(x - barWidth/2, moraleY - barHeight/2, barWidth, barHeight);
         
-        // Wypełnienie paska morale
         if (moralePercent > 0) {
             ctx.fillStyle = '#0cc';
             ctx.fillRect(x - barWidth/2, moraleY - barHeight/2, barWidth * moralePercent, barHeight);
         }
         
-        // Ramka paska morale
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 1;
         ctx.strokeRect(x - barWidth/2, moraleY - barHeight/2, barWidth, barHeight);
     });
     }
 
-    // --- RYSOWANIE STREF LECZENIA (SZPITALE POLOWE) ---
-    // Rysujemy PO jednostkach, żeby były widoczne, ale PRZED pogodą
-    // Pobieramy strefy z danych symulacji (zdefiniowane w model.py)
     const healingZones = data.healing_zones || [
         {x: 115, y: 15}, {x: 135, y: 15},
         {x: 115, y: 50}, {x: 135, y: 50},
@@ -1125,25 +1000,21 @@ function renderSimulation(data) {
     ctx.lineWidth = 2;
 
     healingZones.forEach(zone => {
-        // Sprawdź czy strefa jest w granicach mapy
         if (zone.x >= data.map_width || zone.y >= data.map_height) {
             console.warn('Healing zone out of bounds:', zone);
             return;
         }
 
-        // Konwersja współrzędnych siatki na piksele
         const zx = zone.x * tileSize * scale;
         const zy = zone.y * tileSize * scale;
-        const size = tileSize * scale; // Rozmiar jednego pola (16x2 = 32px)
+        const size = tileSize * scale;
 
-        // Tło strefy - bardziej widoczne
-        ctx.fillStyle = 'rgba(0, 255, 0, 0.4)'; // Zwiększona widoczność
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
         ctx.strokeStyle = 'rgba(0, 255, 0, 0.9)';
         
         ctx.fillRect(zx, zy, size, size);
         ctx.strokeRect(zx, zy, size, size);
 
-        // Rysowanie krzyża
         ctx.save();
         ctx.beginPath();
         ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
@@ -1152,11 +1023,9 @@ function renderSimulation(data) {
         const crossSize = size * 0.6;
         const offset = (size - crossSize) / 2;
 
-        // Pionowa belka
         ctx.moveTo(zx + size/2, zy + offset);
         ctx.lineTo(zx + size/2, zy + size - offset);
         
-        // Pozioma belka
         ctx.moveTo(zx + offset, zy + size/2);
         ctx.lineTo(zx + size - offset, zy + size/2);
         
@@ -1164,7 +1033,6 @@ function renderSimulation(data) {
         ctx.restore();
     });
 
-    // --- RYSOWANIE POGODY ---
     if (currentWeather === 'rain') {
         drawRain(ctx, canvas.width, canvas.height);
     } else if (currentWeather === 'fog') {
@@ -1172,18 +1040,14 @@ function renderSimulation(data) {
     }
 }
 
-// Aktualizuj status
 function updateStatus(status, text) {
     const statusEl = document.getElementById('status');
     statusEl.className = `simulation-status status-${status}`;
     statusEl.textContent = text;
 }
 
-// Inicjalizacja
 loadUnitTypes();
 loadScenarios();
-
-// --- TOOLTIP LOGIC ---
 
 function setupTooltip() {
     tooltip = document.createElement('div');
@@ -1226,13 +1090,11 @@ function handleMouseMove(e) {
 
     let found = false;
     
-    // Iterate to find agent under mouse
     for (let i = currentAgents.length - 1; i >= 0; i--) {
         const agent = currentAgents[i];
         const x = (agent.x + 0.5) * tileSize * scale;
         const y = (agent.y + 0.5) * tileSize * scale;
         
-        // Check collision with sprite box
         if (mouseX >= x - spriteSize / 2 && mouseX <= x + spriteSize / 2 &&
             mouseY >= y - spriteSize / 2 && mouseY <= y + spriteSize / 2) {
             
@@ -1250,11 +1112,9 @@ function handleMouseMove(e) {
 function showTooltip(screenX, screenY, agent) {
     tooltip.style.display = 'block';
     
-    // Position tooltip near mouse but keep it on screen
     let left = screenX + 15;
     let top = screenY + 15;
     
-    // Simple boundary check (optional, but good for UX)
     if (left + 200 > window.innerWidth) left = screenX - 215;
     if (top + 150 > window.innerHeight) top = screenY - 165;
 
@@ -1271,7 +1131,6 @@ function showTooltip(screenX, screenY, agent) {
     };
     const stateText = stateMap[agent.state] || agent.state;
     
-    // Sprawdź czy jednostka jest w strefie leczenia (tylko dla Korony)
     let healingStatus = '';
     if (agent.faction === 'Armia Koronna') {
         const healingZones = [
@@ -1280,7 +1139,6 @@ function showTooltip(screenX, screenY, agent) {
             {x: 115, y: 85}, {x: 135, y: 85}
         ];
         
-        // Proste sprawdzenie czy jest blisko strefy (tolerancja 1 kratki)
         const isHealing = healingZones.some(z => Math.abs(agent.x - z.x) < 1.5 && Math.abs(agent.y - z.y) < 1.5);
         
         if (isHealing && agent.hp < agent.max_hp) {
@@ -1314,5 +1172,4 @@ function getHpColor(current, max) {
     return '#f44336';
 }
 
-// Initialize tooltip
 setupTooltip();

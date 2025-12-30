@@ -20,11 +20,10 @@ import uuid
 app = Flask(__name__)
 CORS(app)
 
-# Globalna instancja symulacji
 simulation = None
 simulation_lock = threading.Lock()
 simulation_running = False
-current_scenario_id = None  # ID aktualnie uruchomionego scenariusza
+current_scenario_id = None
 
 MAP_PATH = "assets/map/map.tmx"
 RESULTS_FILE = "battle_results.json"
@@ -32,38 +31,31 @@ RESULTS_FILE = "battle_results.json"
 
 @app.route("/")
 def index():
-    """Główna strona z interfejsem konfiguracji"""
     return render_template("index.html")
 
 
 @app.route("/dashboard")
 def dashboard():
-    """Strona dashboardu analitycznego wyników bitew"""
     return render_template("dashboard.html")
 
 
 @app.route("/heatmap/<result_id>")
 def heatmap_view(result_id):
-    """Strona wyświetlająca heatmapę dla konkretnego wyniku"""
     return render_template("heatmap.html", result_id=result_id)
 
 
 @app.route("/assets/<path:filename>")
 def serve_assets(filename):
-    """Serwuje pliki statyczne (sprite'y, mapy) z folderu assets"""
     assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
     return send_from_directory(assets_dir, filename)
 
 
 @app.route("/api/battle-results", methods=["GET"])
 def get_battle_results():
-    """Zwraca zapisane wyniki bitew z battle_results.json"""
     try:
         if os.path.exists(RESULTS_FILE):
             with open(RESULTS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # Nie wysyłaj pełnych danych heatmapy w liście, żeby nie zapchać łącza
-            # (opcjonalnie, ale dobra praktyka - tu zostawiam jak jest, bo user nie prosił o optymalizację)
         else:
             data = []
         return jsonify({"ok": True, "data": data})
@@ -73,7 +65,6 @@ def get_battle_results():
 
 @app.route("/api/battle-result/<result_id>", methods=["GET"])
 def get_single_battle_result(result_id):
-    """Zwraca pojedynczy wynik bitwy po ID"""
     try:
         if os.path.exists(RESULTS_FILE):
             with open(RESULTS_FILE, "r", encoding="utf-8") as f:
@@ -93,11 +84,8 @@ def get_single_battle_result(result_id):
 
 @app.route("/api/unit-types", methods=["GET"])
 def get_unit_types():
-    """Zwraca dostępne typy jednostek z parametrami"""
-    # Inicjalizujemy model tylko po to, by pobrać parametry
     model = BattleOfZborowModel(MAP_PATH, {})
 
-    # Lista jednostek kozackich do poprawnego przypisania frakcji
     cossack_units_list = [
         "Jazda Tatarska",
         "Piechota Kozacka",
@@ -108,7 +96,6 @@ def get_unit_types():
 
     unit_types = {}
     for unit_name, params in model.unit_params.items():
-        # Określ frakcję na podstawie listy lub nazwy
         if (
             unit_name in cossack_units_list
             or "Kozacka" in unit_name
@@ -122,9 +109,9 @@ def get_unit_types():
             "faction": faction,
             "hp": params["hp"],
             "morale": params["morale"],
-            "discipline": params.get("discipline", 50),  # Dodajemy nowe pole do API
+            "discipline": params.get("discipline", 50),
             "range": params["range"],
-            "damage": params.get("melee_damage", 0),  # Wyświetlamy melee jako główne
+            "damage": params.get("melee_damage", 0),
             "speed": params["speed"],
             "description": params["description"],
             "sprite_path": params["sprite_path"],
@@ -135,9 +122,7 @@ def get_unit_types():
 
 @app.route("/api/scenarios", methods=["GET"])
 def get_scenarios():
-    """Zwraca predefiniowane scenariusze bitwy z nowymi jednostkami"""
 
-    # Lista wszystkich możliwych jednostek
     all_units = [
         "Husaria",
         "Pancerni",
@@ -160,27 +145,23 @@ def get_scenarios():
             "name": "Dzień 1: Chaos na Przeprawie (15 VIII)",
             "description": "Atak na przeprawę. Wojska koronne (niebieskie) utknęły na mostach i lewym brzegu. Tatarzy atakują z lasów po lewej.",
             "units": {
-                # --- Armia Koronna (Utknięta na przeprawie) ---
-                "Pospolite Ruszenie": 10,  # Panika na brzegu
-                "Czeladz Obozowa": 6,  # Tabory blokujące mosty
-                "Pancerni": 4,  # Osłona
-                "Husaria": 2,  # Próba kontrataku
-                # --- Atakujący (Tatarzy z lewej strony mapy) ---
-                "Jazda Tatarska": 16,  # Szybki atak z lasu
-                "Jazda Kozacka": 4,  # Wsparcie
+                "Pospolite Ruszenie": 10,
+                "Czeladz Obozowa": 6,
+                "Pancerni": 4,
+                "Husaria": 2,
+                "Jazda Tatarska": 16,
+                "Jazda Kozacka": 4,
                 "_deployment": {
-                    # Polacy stłoczeni przy rzece i mostach (X: 30-60)
-                    "Czeladz Obozowa": {"x": [35, 55], "y": [30, 70]},  # Na mostach
+                    "Czeladz Obozowa": {"x": [35, 55], "y": [30, 70]},
                     "Pospolite Ruszenie": {
                         "x": [25, 45],
                         "y": [20, 80],
-                    },  # Przed mostami (lewy brzeg)
+                    },
                     "Pancerni": {
                         "x": [45, 60],
                         "y": [10, 90],
-                    },  # Już przeprawieni (prawy brzeg)
+                    },
                     "Husaria": {"x": [50, 65], "y": [40, 60]},
-                    # Tatarzy wyłaniają się z lewej krawędzi mapy
                     "Jazda Tatarska": {"x": [2, 20], "y": [10, 90]},
                     "Jazda Kozacka": {"x": [2, 15], "y": [40, 60]},
                 },
@@ -191,33 +172,29 @@ def get_scenarios():
             "name": "Dzień 2: Obrona Wałów (16 VIII)",
             "description": "Główna faza bitwy. Polacy obsadzają fortyfikacje po prawej stronie mapy. Kozacy szturmują przez przedpole.",
             "units": {
-                # --- Obrońcy (Za murami/wałami po prawej) ---
-                "Piechota Niemiecka": 10,  # Na wałach
-                "Dragonia": 6,  # Mobilna obrona luk
-                "Artyleria Koronna": 3,  # W bastionach
-                "Husaria": 3,  # Odwód wewnątrz miasta
-                # --- Atakujący (Szturm ze środka mapy) ---
-                "Piechota Kozacka": 18,  # Główna siła
-                "Czern": 12,  # Mięso armatnie
-                "Artyleria Kozacka": 3,  # Ostrzał wałów
-                "Jazda Tatarska": 5,  # Czeka na tyłach
+                "Piechota Niemiecka": 10,
+                "Dragonia": 6,
+                "Artyleria Koronna": 3,
+                "Husaria": 3,
+                "Piechota Kozacka": 18,
+                "Czern": 12,
+                "Artyleria Kozacka": 3,
+                "Jazda Tatarska": 5,
                 "_deployment": {
-                    # Polacy w fortyfikacjach (Prawa strona, X > 110)
                     "Piechota Niemiecka": {
                         "x": [110, 125],
                         "y": [15, 85],
-                    },  # Pierwsza linia wałów
-                    "Artyleria Koronna": {"x": [115, 130], "y": [20, 80]},  # Bastiony
-                    "Dragonia": {"x": [120, 140], "y": [10, 90]},  # Wewnątrz
-                    "Husaria": {"x": [130, 150], "y": [40, 60]},  # Centrum miasta
-                    # Kozacy na otwartym polu (Środek mapy, X: 50-90)
+                    },
+                    "Artyleria Koronna": {"x": [115, 130], "y": [20, 80]},
+                    "Dragonia": {"x": [120, 140], "y": [10, 90]},
+                    "Husaria": {"x": [130, 150], "y": [40, 60]},
                     "Piechota Kozacka": {"x": [60, 95], "y": [10, 90]},
                     "Czern": {"x": [50, 80], "y": [20, 80]},
                     "Artyleria Kozacka": {"x": [40, 60], "y": [30, 70]},
                     "Jazda Tatarska": {
                         "x": [30, 50],
                         "y": [10, 90],
-                    },  # Za rzeką/na mostach
+                    },
                 },
             },
         },
@@ -226,18 +203,14 @@ def get_scenarios():
             "name": "Kryzys: Kontratak Czeladzi",
             "description": "Krytyczny moment. Wróg wdarł się do miasta (prawa strona). Czeladź broni centrum obozu.",
             "units": {
-                # --- Obrońcy (Wciśnięci głęboko w miasto) ---
                 "Czeladz Obozowa": 20,
                 "Dragonia": 4,
                 "Pospolite Ruszenie": 2,
-                # --- Atakujący (Już wewnątrz fortyfikacji) ---
                 "Piechota Kozacka": 12,
                 "Jazda Kozacka": 4,
                 "_deployment": {
-                    # Polacy w samym centrum miasta (X: 130-155)
                     "Czeladz Obozowa": {"x": [135, 155], "y": [30, 70]},
                     "Dragonia": {"x": [130, 145], "y": [20, 80]},
-                    # Wróg przełamał wały (X: 110-125)
                     "Piechota Kozacka": {"x": [110, 130], "y": [15, 85]},
                     "Jazda Kozacka": {"x": [100, 120], "y": [40, 60]},
                 },
@@ -256,11 +229,9 @@ def get_scenarios():
                 "Jazda Tatarska": 12,
                 "Jazda Kozacka": 8,
                 "_deployment": {
-                    # Polacy na środku mapy (przed wałami)
                     "Piechota Niemiecka": {"x": [90, 105], "y": [20, 80]},
                     "Husaria": {"x": [100, 110], "y": [30, 70]},
                     "Pancerni": {"x": [90, 105], "y": [10, 90]},
-                    # Wróg atakuje od rzeki
                     "Piechota Kozacka": {"x": [50, 70], "y": [20, 80]},
                     "Jazda Kozacka": {"x": [40, 60], "y": [10, 90]},
                     "Jazda Tatarska": {"x": [30, 50], "y": [5, 95]},
@@ -277,10 +248,8 @@ def get_scenarios():
                 "Jazda Tatarska": 5,
                 "Jazda Kozacka": 3,
                 "_deployment": {
-                    # Polacy bronią mostów (Prawy brzeg)
                     "Pancerni": {"x": [50, 60], "y": [30, 70]},
                     "Dragonia": {"x": [55, 65], "y": [40, 60]},
-                    # Tatarzy próbują sforsować rzekę (Lewy brzeg)
                     "Jazda Tatarska": {"x": [20, 35], "y": [20, 80]},
                     "Jazda Kozacka": {"x": [25, 40], "y": [40, 60]},
                 },
@@ -297,10 +266,8 @@ def get_scenarios():
                 "Czern": 15,
                 "Jazda Tatarska": 5,
                 "_deployment": {
-                    # Polacy startują z miasta/bram (Prawa strona)
-                    "Husaria": {"x": [110, 125], "y": [10, 90]},  # Rozpędzona linia
+                    "Husaria": {"x": [110, 125], "y": [10, 90]},
                     "Pancerni": {"x": [120, 130], "y": [20, 80]},
-                    # Wróg na przedpolu (Środek)
                     "Czern": {"x": [70, 90], "y": [10, 90]},
                     "Piechota Kozacka": {"x": [60, 80], "y": [20, 80]},
                     "Jazda Tatarska": {"x": [40, 60], "y": [5, 95]},
@@ -317,32 +284,28 @@ def get_scenarios():
                 "Husaria": 2,
                 "Pospolite Ruszenie": 6,
                 "Artyleria Koronna": 2,
-                # Ogromna przewaga wroga
                 "Piechota Kozacka": 25,
                 "Czern": 20,
                 "Jazda Tatarska": 15,
                 "Artyleria Kozacka": 4,
                 "_deployment": {
-                    # Polacy: tylko wewnątrz murów (Prawa krawędź)
                     "Piechota Niemiecka": {"x": [115, 130], "y": [15, 85]},
                     "Artyleria Koronna": {"x": [120, 135], "y": [25, 75]},
                     "Dragonia": {"x": [125, 145], "y": [10, 90]},
                     "Husaria": {"x": [140, 155], "y": [40, 60]},
                     "Pospolite Ruszenie": {"x": [135, 155], "y": [10, 90]},
-                    # Wróg: Od rzeki aż pod mury
                     "Piechota Kozacka": {
                         "x": [50, 100],
                         "y": [5, 95],
-                    },  # Podchodzą pod mury
+                    },
                     "Czern": {"x": [40, 80], "y": [10, 90]},
-                    "Jazda Tatarska": {"x": [5, 60], "y": [0, 100]},  # Panują na polu
+                    "Jazda Tatarska": {"x": [5, 60], "y": [0, 100]},
                     "Artyleria Kozacka": {"x": [30, 50], "y": [20, 80]},
                 },
             },
         },
     }
 
-    # Uzupełnij zerami brakujące jednostki (dla bezpieczeństwa frontendu)
     for scenario in scenarios.values():
         for unit in all_units:
             if unit not in scenario["units"]:
@@ -353,18 +316,15 @@ def get_scenarios():
 
 @app.route("/api/map-data", methods=["GET"])
 def get_map_data():
-    """Zwraca dane mapy z Tiled (layout tiles)"""
     import pytmx
     import xml.etree.ElementTree as ET
 
     try:
         tmx_data = pytmx.TiledMap(MAP_PATH)
 
-        # Załaduj XML bezpośrednio, aby dostać surowe GID
         tree = ET.parse(MAP_PATH)
         root = tree.getroot()
 
-        # Znajdź warstwę "Teren"
         terrain_layer_element = None
         for layer in root.findall("layer"):
             if layer.get("name") == "Teren":
@@ -374,19 +334,16 @@ def get_map_data():
         if terrain_layer_element is None:
             return jsonify({"error": "Layer 'Teren' not found"}), 404
 
-        # Pobierz surowe dane CSV z warstwy
         data_element = terrain_layer_element.find("data")
         if data_element is None or data_element.get("encoding") != "csv":
             return jsonify({"error": "Invalid layer data format"}), 500
 
         csv_data = data_element.text.strip()
 
-        # Parsuj CSV na listę liczb
         raw_gids = [int(x.strip()) for x in csv_data.split(",") if x.strip()]
 
-        # Konwertuj na tablicę 2D - zachowaj flagi transformacji jako osobny obiekt
         tile_grid = []
-        flip_flags = []  # Osobna tablica dla flag transformacji
+        flip_flags = []
         width = int(terrain_layer_element.get("width"))
         height = int(terrain_layer_element.get("height"))
 
@@ -402,12 +359,10 @@ def get_map_data():
                 if idx < len(raw_gids):
                     raw_gid = raw_gids[idx]
 
-                    # Wyodrębnij flagi transformacji
                     flip_h = bool(raw_gid & FLIPPED_HORIZONTALLY)
                     flip_v = bool(raw_gid & FLIPPED_VERTICALLY)
                     flip_d = bool(raw_gid & FLIPPED_DIAGONALLY)
 
-                    # Czyste GID bez flag
                     gid = raw_gid & 0x1FFFFFFF
 
                     flags_row.append({"h": flip_h, "v": flip_v, "d": flip_d})
@@ -419,17 +374,14 @@ def get_map_data():
             tile_grid.append(row)
             flip_flags.append(flags_row)
 
-        # Pobierz informacje o tilesetcie
         tileset = tmx_data.tilesets[0] if len(tmx_data.tilesets) > 0 else None
 
-        # Domyślne wartości
         tileset_image_path = "assets/map/tileset_legacy.png"
         tileset_columns = 32
         tileset_spacing = 1
         tileset_firstgid = 1
 
         if tileset:
-            # Bezpieczne pobieranie ścieżki
             try:
                 if hasattr(tileset, "image") and tileset.image:
                     if isinstance(tileset.image, str):
@@ -443,7 +395,6 @@ def get_map_data():
             except Exception as img_err:
                 print(f"Warning: Error extracting tileset image path: {img_err}")
 
-            # Jeśli to nowa mapa, wymuś poprawny tileset (ponieważ .tsx może mieszać ścieżki)
             if "map" in MAP_PATH:
                 tileset_image_path = "assets/map/tileset_legacy.png"
 
@@ -457,7 +408,7 @@ def get_map_data():
             "tile_width": tmx_data.tilewidth,
             "tile_height": tmx_data.tileheight,
             "tiles": tile_grid,
-            "flip_flags": flip_flags,  # Dodaj flagi transformacji
+            "flip_flags": flip_flags,
             "tileset_image": tileset_image_path,
             "tileset_columns": tileset_columns,
             "tileset_spacing": tileset_spacing,
@@ -479,12 +430,11 @@ def get_map_data():
 
 @app.route("/api/start-simulation", methods=["POST"])
 def start_simulation():
-    """Rozpoczyna nową symulację z uwzględnieniem pogody."""
     global simulation, simulation_running, current_scenario_id
 
     data = request.json
     scenario_id = data.get("scenario_id", None)
-    weather = data.get("weather", "clear")  # Odbieramy pogodę, domyślnie czysto
+    weather = data.get("weather", "clear")
 
     all_scenarios_response = get_scenarios()
     all_scenarios = all_scenarios_response.json
@@ -502,7 +452,6 @@ def start_simulation():
     print(f"Start scenariusza: {scenario_id}, Pogoda: {weather}")
 
     with simulation_lock:
-        # Przekazujemy pogodę do konstruktora
         simulation = BattleOfZborowModel(MAP_PATH, final_config, weather=weather)
         simulation_running = True
         current_scenario_id = scenario_id
@@ -512,12 +461,11 @@ def start_simulation():
 
 @app.route("/api/stop-simulation", methods=["POST"])
 def stop_simulation():
-    """Zatrzymuje i czyści symulację"""
     global simulation, simulation_running, current_scenario_id
 
     with simulation_lock:
         simulation_running = False
-        simulation = None  # Wyczyść symulację
+        simulation = None
         current_scenario_id = None
 
     return jsonify(
@@ -527,17 +475,14 @@ def stop_simulation():
 
 @app.route("/api/save-battle-result", methods=["POST"])
 def save_battle_result():
-    """Zapisuje wynik bitwy do pliku JSON"""
     global current_scenario_id, simulation
 
     try:
         data = request.json
 
-        # Pobierz dane heatmapy z symulacji, jeśli istnieje
         heatmap_data = None
         with simulation_lock:
             if simulation is not None:
-                # Upewnij się, że atrybuty istnieją (zabezpieczenie przed błędem usera)
                 h_crown = getattr(simulation, "heatmap_crown", None)
                 h_cossack = getattr(simulation, "heatmap_cossack", None)
 
@@ -549,9 +494,8 @@ def save_battle_result():
                         "height": simulation.height,
                     }
 
-        # Przygotuj wynik bitwy
         battle_result = {
-            "id": str(uuid.uuid4()),  # Generuj unikalne ID
+            "id": str(uuid.uuid4()),
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "scenario_id": current_scenario_id or data.get("scenario_id", "unknown"),
             "scenario_name": data.get("scenario_name", "Unknown"),
@@ -564,17 +508,14 @@ def save_battle_result():
             "heatmap": heatmap_data,
         }
 
-        # Wczytaj istniejące wyniki lub stwórz nową listę
         if os.path.exists(RESULTS_FILE):
             with open(RESULTS_FILE, "r", encoding="utf-8") as f:
                 results = json.load(f)
         else:
             results = []
 
-        # Dodaj nowy wynik
         results.append(battle_result)
 
-        # Zapisz z powrotem do pliku
         with open(RESULTS_FILE, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
 
@@ -589,11 +530,9 @@ def save_battle_result():
 
 @app.route("/api/simulation-step", methods=["GET"])
 def simulation_step():
-    """Wykonuje jeden krok symulacji i zwraca aktualny stan"""
     global simulation, simulation_running
 
     with simulation_lock:
-        # Sprawdź symulację wewnątrz locka
         if simulation is None:
             return jsonify({"error": "Symulacja nie została rozpoczęta"}), 400
 
@@ -601,10 +540,8 @@ def simulation_step():
             print(f"Executing step... Agents: {len(simulation.schedule.agents)}")
             simulation.step()
 
-        # Zbierz informacje o aktualnym stanie (TYLKO ŻYWI AGENCI)
         agents_data = []
         for agent in simulation.schedule.agents:
-            # Pomiń agentów z hp <= 0 (nie powinni już być renderowani)
             if agent.hp <= 0:
                 continue
 
@@ -645,10 +582,8 @@ def simulation_step():
             "total_agents": len([a for a in simulation.schedule.agents if a.hp > 0]),
         }
 
-        # Sprawdź status bitwy
         battle_status = simulation.get_battle_status()
 
-        # Przygotuj strefy leczenia
         healing_zones_data = [{"x": x, "y": y} for x, y in simulation.healing_zones]
 
         return jsonify(
@@ -666,7 +601,6 @@ def simulation_step():
 
 @app.route("/api/simulation-frame", methods=["GET"])
 def get_simulation_frame():
-    """Generuje i zwraca obraz aktualnego stanu symulacji"""
     global simulation
 
     if simulation is None:
@@ -676,7 +610,6 @@ def get_simulation_frame():
         renderer = WebRenderer(simulation)
         frame = renderer.render_frame()
 
-        # Konwertuj do base64
         buffered = io.BytesIO()
         frame.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
@@ -687,7 +620,6 @@ def get_simulation_frame():
 
 
 def stream_simulation():
-    """Generator do streamowania klatek symulacji"""
     global simulation, simulation_running
 
     while simulation_running:
@@ -705,14 +637,13 @@ def stream_simulation():
                 b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + img_bytes + b"\r\n"
             )
 
-            time.sleep(0.2)  # 5 FPS
+            time.sleep(0.2)
         else:
             time.sleep(0.1)
 
 
 @app.route("/api/video-feed")
 def video_feed():
-    """Endpoint do streamowania wideo (MJPEG)"""
     return Response(
         stream_simulation(), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
@@ -720,17 +651,13 @@ def video_feed():
 
 @app.route("/api/map-image")
 def get_map_image():
-    """Zwraca wyrenderowany obraz mapy (tło)"""
     try:
-        # Użyj istniejącej symulacji jeśli jest, żeby nie ładować mapy od nowa
-        # Jeśli nie ma, stwórz tymczasowy model
         global simulation
 
         model_to_render = simulation
         if model_to_render is None:
             model_to_render = BattleOfZborowModel(MAP_PATH, {})
 
-        # Render at 1:1 (no extra scaling) for analytical images
         renderer = WebRenderer(model_to_render, scale=1)
         image = renderer.render_map_only()
 
@@ -752,9 +679,7 @@ def get_map_image():
 
 @app.route("/api/heatmap-image/<result_id>", methods=["GET"])
 def get_heatmap_image(result_id):
-    """Generuje i zwraca obraz mapy z nałożoną heatmapą dla danego wyniku."""
     try:
-        # 1. Pobierz dane wyniku
         if not os.path.exists(RESULTS_FILE):
             return jsonify({"error": "No results file"}), 404
 
@@ -768,20 +693,15 @@ def get_heatmap_image(result_id):
 
         heatmap_data = result["heatmap"]
 
-        # 2. Przygotuj renderer (użyj tymczasowego modelu tylko do załadowania mapy)
-        # Używamy globalnej symulacji jeśli dostępna, żeby nie ładować mapy od nowa
         global simulation
         model_to_render = simulation
         if model_to_render is None:
             model_to_render = BattleOfZborowModel(MAP_PATH, {})
 
-        # Render at 1:1 for heatmap export
         renderer = WebRenderer(model_to_render, scale=1)
 
-        # 3. Wyrenderuj heatmapę
         image = renderer.render_heatmap(heatmap_data)
 
-        # 4. Zwróć jako obraz
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()

@@ -83,8 +83,6 @@ function setTimeFilter(button) {
   applyFilters();
 }
 
-// Removed non-animated chart per request
-
 function renderWinsChartAnimated(data) {
   const byScenario = groupBy(data, 'scenario_name');
   const labels = Object.keys(byScenario);
@@ -103,13 +101,11 @@ function renderWinsChartAnimated(data) {
   const barW = Math.max(24, Math.floor((canvas.width - 120) / Math.max(1, labels.length)));
   const baseY = canvas.height - 50;
 
-  // compute avg survivors and update UI stat
   const avgSurvivors = data.length ? (data.reduce((s, r) => s + (r.survivors||0), 0) / data.length) : 0;
   const statEl = document.getElementById('avgSurvivorsStat');
   if (statEl) statEl.textContent = avgSurvivors.toFixed(1);
   renderChartLegend();
 
-  // axes
   ctx.strokeStyle = '#444'; ctx.beginPath(); ctx.moveTo(60, 30); ctx.lineTo(60, baseY); ctx.lineTo(canvas.width-30, baseY); ctx.stroke();
   ctx.fillStyle = '#aaa'; ctx.font = '14px Segoe UI'; ctx.fillText('Rozkład zwycięstw', 70, 30);
 
@@ -135,11 +131,9 @@ function renderWinsChartAnimated(data) {
     t = Math.min(1, (now - start) / duration);
     const e = easeOutCubic(t);
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    // redraw axes
     ctx.strokeStyle = '#444'; ctx.beginPath(); ctx.moveTo(60, 30); ctx.lineTo(60, baseY); ctx.lineTo(canvas.width-30, baseY); ctx.stroke();
     ctx.fillStyle = '#aaa'; ctx.font = '14px Segoe UI'; ctx.fillText('Rozkład zwycięstw', 70, 30);
 
-    // ticks each frame
     ctx.fillStyle = '#888'; ctx.font = '12px Segoe UI';
     const ticks = 5;
     for (let i=0;i<=ticks;i++) {
@@ -155,14 +149,10 @@ function renderWinsChartAnimated(data) {
       const kH = scale(crown[i]) * e;
       const dH = scale(draw[i]) * e;
 
-      // Kozacy/Tatarzy
       ctx.fillStyle = '#1976d2'; ctx.fillRect(x, baseY - cH, barW-8, cH);
-      // Armia Koronna
       ctx.fillStyle = '#d32f2f'; ctx.fillRect(x, baseY - cH - kH, barW-8, kH);
-      // Remis (draw)
       ctx.fillStyle = '#777'; ctx.fillRect(x, baseY - cH - kH - dH, barW-8, dH);
 
-      // x-axis label (wrapped if needed)
       ctx.fillStyle = '#dcdcdc';
       ctx.font = '11px Segoe UI';
       ctx.textAlign = 'center';
@@ -180,10 +170,6 @@ function renderWinsChartAnimated(data) {
 
   bindChartHover(canvas);
 }
-
-// Average survivors moved to wins chart overlay
-
-// Scenario balance removed per request
 
 function bindChartHover(canvas) {
   if (!canvas) return;
@@ -255,7 +241,7 @@ function wrapLabel(text, maxChars) {
     }
   });
   if (current) lines.push(current);
-  return lines.slice(0, 2); // limit to two lines to avoid overflow
+  return lines.slice(0, 2);
 }
 
 function renderResultsTable(data) {
@@ -267,7 +253,6 @@ function renderResultsTable(data) {
   table.appendChild(thead);
   const tbody = document.createElement('tbody');
 
-  // Show only 10 most recent battles
   data.slice().reverse().slice(0, 10).forEach(r => {
     const tr = document.createElement('tr');
     const winnerBadge = r.winner === 'Armia Koronna' ? 'badge crown' : (r.winner === 'Kozacy/Tatarzy' ? 'badge cossack' : 'badge draw');

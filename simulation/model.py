@@ -6,52 +6,38 @@ from pathfinding.core.grid import Grid
 
 
 class BattleOfZborowModel(mesa.Model):
-    """Główny model symulacji bitwy z obsługą pogody."""
-
     def __init__(self, map_file_path, units_config=None, weather="clear"):
         super().__init__()
-        self.weather = weather  # "clear", "rain", "fog"
+        self.weather = weather
         self.schedule = mesa.time.RandomActivation(self)
 
-        # Wczytaj mapę i jej właściwości
         self.map_data = pytmx.TiledMap(map_file_path)
         self.width = self.map_data.width
         self.height = self.map_data.height
 
         self.grid = mesa.space.MultiGrid(self.width, self.height, torus=False)
 
-        # Wczytaj koszty terenu jako numpy array (dla łatwej manipulacji)
         self.terrain_costs = np.array(self.load_terrain_data(), dtype=np.float32)
 
-        # Zastosuj efekty pogodowe do terenu (błoto)
         self.apply_weather_effects()
 
-        # Inicjalizacja gridu dla pathfindingu (biblioteka wymaga listy list)
         self.path_grid = Grid(matrix=self.terrain_costs.tolist())
 
-        # --- HEATMAPS ---
-        # Przechowujemy liczbę odwiedzin każdego pola przez frakcje
-        # Wymiary: [y][x] (zgodnie z konwencją numpy i mapy)
         self.heatmap_crown = np.zeros((self.height, self.width), dtype=int)
         self.heatmap_cossack = np.zeros((self.height, self.width), dtype=int)
 
-        # Konfiguracja jednostek
         self.units_config = units_config if units_config else {}
 
-        # DEFINICJA 6 PUNKTÓW LECZENIA (ROGI OBOZU KORONNEGO)
-        # Zakładamy, że obóz jest po prawej stronie mapy (X > 100)
         self.healing_zones = [
             (73, 24),
-            (126, 24),  # Dolna flanka
+            (126, 24),
             (127, 41),
-            (127, 52),  # Centrum
+            (127, 52),
             (99, 68),
-            (127, 67),  # Górna flanka
+            (127, 67),
         ]
 
-        # --- DEFINICJE JEDNOSTEK ---
         self.unit_params = {
-            # --- ARMIA KORONNA ---
             "Husaria": {
                 "hp": 150,
                 "morale": 140,
@@ -164,7 +150,6 @@ class BattleOfZborowModel(mesa.Model):
                 "description": "Potężna siła ognia, bardzo wolna.",
                 "sprite_path": "assets/sprites/armata.png",
             },
-            # --- KOZACY I TATARZY ---
             "Jazda Tatarska": {
                 "hp": 85,
                 "morale": 80,
@@ -237,14 +222,11 @@ class BattleOfZborowModel(mesa.Model):
             },
         }
 
-        # Zastosuj efekty pogodowe do statystyk jednostek (mokry proch, błoto)
         self.apply_weather_to_units()
 
-        # Stwórz agentów
         self.setup_agents()
 
     def load_terrain_data(self):
-        """Wczytuje dane o terenie z mapy Tiled do macierzy kosztów."""
         costs = np.ones((self.height, self.width), dtype=np.float32)
         try:
             terrain_layer = self.map_data.get_layer_by_name("Teren")
@@ -259,9 +241,7 @@ class BattleOfZborowModel(mesa.Model):
         return costs
 
     def apply_weather_effects(self):
-        """Modyfikuje teren w zależności od pogody."""
         if self.weather == "rain":
-            # Deszcz zamienia zwykły teren (koszt == 1.5) w błoto -> koszt ruchu x2.5
             print("🌧️ POGODA: Deszcz - teren zmienia się w błoto.")
             self.terrain_costs = np.where(
                 self.terrain_costs == 1.5, self.terrain_costs * 2.5, self.terrain_costs
@@ -270,30 +250,21 @@ class BattleOfZborowModel(mesa.Model):
             print("🌫️ POGODA: Mgła - ograniczona widoczność.")
 
     def apply_weather_to_units(self):
-        """Modyfikuje statystyki jednostek (mokry proch, spowolnienie)."""
         if self.weather == "rain":
             for name, params in self.unit_params.items():
-                # 1. Mokry proch: Drastyczny spadek obrażeń dystansowych dla broni palnej
-                # (Nie dotyczy łuczników tatarskich - oni używają łuków, które też cierpią, ale mniej,
-                # jednak dla uproszczenia zakładamy, że proch cierpi bardziej)
                 if params["ranged_damage"] > 0:
-                    # Łuki tatarskie są mniej wrażliwe niż muszkiety, ale tu tniemy wszystko globalnie
-                    # Można dodać wyjątek dla Tatarów jeśli chcesz
                     params["ranged_damage"] = int(params["ranged_damage"] * 0.3)
                     params["description"] += " (Mokry proch/cięciwy!)"
 
-                # 2. Błoto: Spowolnienie jazdy i artylerii
                 if any(x in name for x in ["Jazda", "Husaria", "Pancerni", "Rajtaria"]):
-                    params["speed"] = max(2, params["speed"] - 3)  # Jazda grzęźnie
+                    params["speed"] = max(2, params["speed"] - 3)
                 if "Artyleria" in name:
-                    params["speed"] = 1  # Artyleria praktycznie stoi
+                    params["speed"] = 1
 
-                # 3. Deszcz: wolniejsze tempo ognia (większa przerwa między strzałami)
                 if params.get("rate_of_fire"):
                     params["rate_of_fire"] = max(0.1, params["rate_of_fire"] * 0.8)
 
     def find_valid_spawn_position(self, y_min, y_max, max_attempts=75):
-        """Znajdź bezpieczne pole spawnu."""
         x_left, x_right = 5, max(6, self.width - 5)
         y_low, y_high = max(0, y_min), min(self.height - 1, y_max)
 
@@ -302,7 +273,7 @@ class BattleOfZborowModel(mesa.Model):
             y = self.random.randrange(y_low, y_high)
             try:
                 if self.terrain_costs[y][x] >= 5:
-                    continue  # Woda/Ściana
+                    continue
             except:
                 continue
 
@@ -315,20 +286,18 @@ class BattleOfZborowModel(mesa.Model):
         )
 
     def setup_agents(self):
-        """Tworzy i rozmieszcza agentów."""
         deployment_zones = self.units_config.get("_deployment", None)
         units_to_spawn = {
             k: v for k, v in self.units_config.items() if k != "_deployment"
         }
 
         if not units_to_spawn:
-            return  # Pusty scenariusz
+            return
 
         for unit_type, count in units_to_spawn.items():
             if unit_type not in self.unit_params:
                 continue
 
-            # Frakcja
             if unit_type in [
                 "Jazda Tatarska",
                 "Piechota Kozacka",
@@ -340,14 +309,12 @@ class BattleOfZborowModel(mesa.Model):
             else:
                 faction = "Armia Koronna"
 
-            # Strefa spawnu
             zone = deployment_zones.get(unit_type) if deployment_zones else None
 
             for _ in range(count):
                 if zone:
                     pos = self.find_valid_spawn_in_zone(zone)
                 else:
-                    # Fallback dla custom battle bez stref
                     if faction == "Kozacy/Tatarzy":
                         pos = self.find_valid_spawn_position(1, 20)
                     else:
@@ -378,12 +345,9 @@ class BattleOfZborowModel(mesa.Model):
     def step(self):
         self.schedule.step()
 
-        # --- UPDATE HEATMAPS ---
-        # Zliczamy pozycje żywych jednostek w tej turze
         for agent in self.schedule.agents:
             if isinstance(agent, MilitaryAgent) and agent.hp > 0 and agent.pos:
                 x, y = agent.pos
-                # Upewnij się, że współrzędne są w granicach (choć powinny być)
                 if 0 <= x < self.width and 0 <= y < self.height:
                     if agent.faction == "Armia Koronna":
                         self.heatmap_crown[y][x] += 1
@@ -394,42 +358,34 @@ class BattleOfZborowModel(mesa.Model):
         self.apply_camp_healing()
 
     def apply_camp_healing(self):
-        """Leczy jednostki koronne znajdujące się w strefach leczenia."""
         for zone in self.healing_zones:
-            # Sprawdź czy strefa mieści się na mapie
             if 0 <= zone[0] < self.width and 0 <= zone[1] < self.height:
-                # Pobierz jednostki z tego pola
                 cell_contents = self.grid.get_cell_list_contents([zone])
 
                 for agent in cell_contents:
-                    # Leczymy tylko żywych Polaków
                     if (
                         isinstance(agent, MilitaryAgent)
                         and agent.faction == "Armia Koronna"
                         and agent.hp > 0
                     ):
 
-                        # 1. Leczenie HP
                         if agent.hp < agent.max_hp:
-                            heal_amount = 5  # Ilość HP na turę
+                            heal_amount = 5
                             agent.hp = min(agent.max_hp, agent.hp + heal_amount)
 
-                        # 2. Odnawianie Morale
                         if agent.morale < agent.max_morale:
                             morale_boost = 3
                             agent.morale = min(
                                 agent.max_morale, agent.morale + morale_boost
                             )
 
-                        # 3. Powrót do walki
-                        # Jeśli jednostka uciekała, ale się uleczyła -> wraca do stanu IDLE
                         if (
                             agent.state == "FLEEING"
                             and agent.hp > agent.max_hp * 0.6
                             and agent.morale > 40
                         ):
                             agent.state = "IDLE"
-                            agent.path = []  # Zatrzymaj się
+                            agent.path = []
 
     def cleanup_dead_agents(self):
         dead_agents = [
