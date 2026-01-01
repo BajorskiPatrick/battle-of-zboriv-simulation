@@ -13,12 +13,35 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshBtn.addEventListener('click', loadData);
   scenarioFilter.addEventListener('change', applyFilters);
 
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) {
+      resetBtn.addEventListener('click', clearData);
+  }
+
   document.querySelectorAll('[data-time-filter]').forEach(btn => {
     btn.addEventListener('click', () => setTimeFilter(btn));
   });
 
   loadData();
 });
+
+async function clearData() {
+    if (!confirm("Czy na pewno chcesz usunąć wszystkie wyniki bitew? Tej operacji nie można cofnąć.")) {
+        return;
+    }
+    try {
+        const res = await fetch('/api/clear-battle-results', { method: 'POST' });
+        const json = await res.json();
+        if (json.ok) {
+            loadData();
+        } else {
+            alert("Błąd podczas usuwania danych: " + json.error);
+        }
+    } catch (e) {
+        console.error('Error clearing results:', e);
+        alert("Błąd połączenia z serwerem.");
+    }
+}
 
 async function loadData() {
   try {
@@ -249,7 +272,7 @@ function renderResultsTable(data) {
   container.innerHTML = '';
   const table = document.createElement('table');
   const thead = document.createElement('thead');
-  thead.innerHTML = '<tr><th>Czas</th><th>Scenariusz</th><th>Zwycięzca</th><th>Ocalałych</th><th>Koronna</th><th>Kozacy</th><th>Łącznie</th><th>Heatmapa</th></tr>';
+  thead.innerHTML = '<tr><th>Czas</th><th>Scenariusz</th><th>Zwycięzca</th><th>Ocalałych</th><th>Koronna</th><th>Kozacy</th><th>Łącznie</th><th>Czas trwania</th><th>Kroki</th><th>Heatmapa</th></tr>';
   table.appendChild(thead);
   const tbody = document.createElement('tbody');
 
@@ -258,6 +281,8 @@ function renderResultsTable(data) {
     const winnerBadge = r.winner === 'Armia Koronna' ? 'badge crown' : (r.winner === 'Kozacy/Tatarzy' ? 'badge cossack' : 'badge draw');
 
     const heatmapLink = r.id ? `<a href="/heatmap/${r.id}" style="color: #4fc3f7; text-decoration: none; font-weight: bold;">Otwórz</a>` : '<span style="color:#555">-</span>';
+    const duration = r.duration ? `${r.duration.toFixed(1)}s` : '-';
+    const steps = r.total_steps || '-';
 
     tr.innerHTML = `<td>${r.timestamp}</td>
                     <td>${r.scenario_name || '—'}</td>
@@ -266,6 +291,8 @@ function renderResultsTable(data) {
                     <td>${r.crown_count ?? 0}</td>
                     <td>${r.cossack_count ?? 0}</td>
                     <td>${r.total_agents ?? 0}</td>
+                    <td>${duration}</td>
+                    <td>${steps}</td>
                     <td>${heatmapLink}</td>`;
     tbody.appendChild(tr);
   });
@@ -273,4 +300,3 @@ function renderResultsTable(data) {
   table.appendChild(tbody);
   container.appendChild(table);
 }
-

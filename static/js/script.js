@@ -11,6 +11,8 @@ let ctx = canvas.getContext('2d');
 let currentAgents = [];
 let tooltip = null;
 
+let simulationStartTime = null;
+
 let spriteCache = {};
 
 let mapData = null;
@@ -157,6 +159,8 @@ function startCustomSimulation() {
             currentScenarioName = "Własna Bitwa";
             initialUnitsConfig = config;
             
+            simulationStartTime = Date.now();
+
             setWeather(weather);
 
             document.querySelector('.main-grid').classList.add('simulation-active');
@@ -391,6 +395,7 @@ async function selectScenario(scenarioId) {
         console.log('Start result:', result);
         
         if (response.ok) {
+            simulationStartTime = Date.now();
             setWeather(weather);
 
             document.querySelector('.main-grid').classList.add('simulation-active');
@@ -605,6 +610,7 @@ async function updateSimulation() {
             data.battle_status.crown_count = data.stats.crown_count;
             data.battle_status.cossack_count = data.stats.cossack_count;
             data.battle_status.total_agents = data.stats.total_agents;
+            data.battle_status.total_steps = data.stats.steps;
             showVictoryModal(data.battle_status);
         }
     } catch (error) {
@@ -635,15 +641,19 @@ async function showVictoryModal(battleStatus) {
     winnerEl.className = `victory-winner ${winnerClass}`;
     winnerEl.textContent = winnerText;
     
+    const duration = simulationStartTime ? (Date.now() - simulationStartTime) / 1000 : 0;
+    const durationText = duration.toFixed(1) + 's';
+
     if (battleStatus.winner !== 'Remis') {
         statsEl.innerHTML = `
             <div>Pozostało jednostek: <strong>${battleStatus.survivors}</strong></div>
-            
+            <div style="margin-top: 5px; font-size: 0.9em; color: #aaa;">Czas trwania: ${durationText} (${battleStatus.total_steps || 0} kroków)</div>
         `;
     } else {
         statsEl.innerHTML = `
             <div>Obie armie poniosły ciężkie straty</div>
             <div>Nikt nie wyszedł zwycięsko z tej bitwy</div>
+            <div style="margin-top: 5px; font-size: 0.9em; color: #aaa;">Czas trwania: ${durationText} (${battleStatus.total_steps || 0} kroków)</div>
         `;
     }
     
@@ -659,6 +669,8 @@ async function saveBattleResult(battleStatus) {
         const cossackCount = parseInt(document.getElementById('cossackCount').textContent) || 0;
         const totalCount = parseInt(document.getElementById('totalCount').textContent) || 0;
         
+        const duration = simulationStartTime ? (Date.now() - simulationStartTime) / 1000 : 0;
+
         const resultData = {
             scenario_id: currentScenarioId,
             scenario_name: currentScenarioName || 'Unknown',
@@ -667,7 +679,9 @@ async function saveBattleResult(battleStatus) {
             crown_count: crownCount,
             cossack_count: cossackCount,
             total_agents: totalCount,
-            initial_units: initialUnitsConfig || {}
+            initial_units: initialUnitsConfig || {},
+            duration: duration,
+            total_steps: battleStatus.total_steps || 0
         };
         
         const response = await fetch('/api/save-battle-result', {

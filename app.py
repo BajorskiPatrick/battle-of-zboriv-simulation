@@ -82,6 +82,16 @@ def get_single_battle_result(result_id):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/clear-battle-results", methods=["POST"])
+def clear_battle_results():
+    try:
+        with open(RESULTS_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+        return jsonify({"ok": True, "message": "Results cleared"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/unit-types", methods=["GET"])
 def get_unit_types():
     model = BattleOfZborowModel(MAP_PATH, {})
@@ -505,6 +515,8 @@ def save_battle_result():
             "cossack_count": data.get("cossack_count", 0),
             "total_agents": data.get("total_agents", 0),
             "initial_units": data.get("initial_units", {}),
+            "duration": data.get("duration", 0),
+            "total_steps": data.get("total_steps", 0),
             "heatmap": heatmap_data,
         }
 
@@ -580,6 +592,7 @@ def simulation_step():
                 ]
             ),
             "total_agents": len([a for a in simulation.schedule.agents if a.hp > 0]),
+            "steps": simulation.schedule.steps,
         }
 
         battle_status = simulation.get_battle_status()

@@ -32,7 +32,7 @@
 
         <div id="content" style="display: none;">
             <div class="info">
-                <span id="scenarioName"></span> | <span id="timestamp"></span> | Zwycięzca: <span id="winner"></span>
+                <span id="scenarioName"></span> | <span id="timestamp"></span> | Zwycięzca: <span id="winner"></span> | Czas trwania: <span id="duration"></span>
             </div>
 
             <div class="heatmap-wrapper">
@@ -68,6 +68,7 @@
                 document.getElementById('scenarioName').textContent = resultData.scenario_name || "Nieznany scenariusz";
                 document.getElementById('timestamp').textContent = resultData.timestamp;
                 document.getElementById('winner').textContent = resultData.winner;
+                document.getElementById('duration').textContent = resultData.duration ? `${resultData.duration.toFixed(1)}s` : '-';
 
                 const mapRes = await fetch('/api/map-data');
                 const mapJson = await mapRes.json();
