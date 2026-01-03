@@ -1,17 +1,17 @@
 # Fdb version 3
-["bibtex report"] 1767445978 "report.aux" "report.bbl" "report" 1767447671
+["bibtex report"] 1767455628 "report.aux" "report.bbl" "report" 1767455738
   "/usr/share/texlive/texmf-dist/bibtex/bst/ieeetran/IEEEtran.bst" 1440712899 57748 7c8250ecf02814ce6ddc0cdbb63df1dd ""
   "ju_cse_report_Ref.bib" 1767290174 24400 8fd441b17b0e9d3b17f6add1bc910b54 ""
-  "report.aux" 1767447671 10344 7f3928f4877d7783560deb736862eeb9 "pdflatex"
+  "report.aux" 1767455738 10637 5ac128b7df98bd184d3eb978a22f36a0 "pdflatex"
   (generated)
   "report.bbl"
   "report.blg"
-["makeindex report.idx"] 1767445464 "report.idx" "report.ind" "report" 1767447671
-  "report.idx" 1767447671 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+["makeindex report.idx"] 1767445464 "report.idx" "report.ind" "report" 1767455738
+  "report.idx" 1767455738 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
   (generated)
   "report.ilg"
   "report.ind"
-["pdflatex"] 1767447671 "/home/patryk_bajorski/SSD/battle_of_zboriv_docs/report.tex" "report.pdf" "report" 1767447671
+["pdflatex"] 1767455737 "/home/patryk_bajorski/SSD/battle_of_zboriv_docs/report.tex" "report.pdf" "report" 1767455738
   "/etc/texmf/web2c/texmf.cnf" 1767293596 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/patryk_bajorski/SSD/battle_of_zboriv_docs/report.tex" 1767299316 2687 ce3e655e0470cd23d56b4d52ce496536 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
@@ -221,18 +221,18 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1767294749 4379155 98693266ff65f58d9f98aff394de12d2 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1767294758 2799384 4571af78c09b7ac5b3e8c33cfd387b04 ""
+  "algorithms/alg.tex" 1767455728 3619 560af2773e4bbcd911d326b9b28e3f77 ""
   "chapters/01-OBJECTIVE.tex" 1767291631 2359 a7bcb6e27adf56b617ff6c6bdf9ad015 ""
   "chapters/02-INTRODUCTION.tex" 1767291645 1672 1a7d26b415d7c1da9a070eb3c64ed357 ""
   "chapters/03-DATA.tex" 1767445977 4205 506c0850dd5529b2d11a4da059e87096 ""
-  "chapters/04-MODEL.tex" 1767299394 4041 22b84abc4a2e57ba234d7bcc18f077ce ""
+  "chapters/04-MODEL.tex" 1767455737 1900 f9c8578e11c45a6dc6fe48da9e72da1f ""
   "chapters/05-IMPLEMENTATION.tex" 1767307609 8859 1f24c6c74ac1de528b96ced81269cec5 ""
   "chapters/06-OBSERVATIONS.tex" 1767445146 5124 47bd9b3a01ff7e52c558d50c0f571574 ""
-  "chapters/07-DISCUSSION.tex" 1767444366 4335 9ae0e0b71eaf177c6be22751abbd3ac8 ""
-  "chapters/CONCLUSIONS.tex" 1767447671 1982 324f3a6642a3d07e63868bf0ba3b2f63 ""
+  "chapters/07-DISCUSSION.tex" 1767455644 4414 912ea62fd1807ba22509ac8954e66ca8 ""
+  "chapters/CONCLUSIONS.tex" 1767453409 1891 9df847435677445c145a0cca6d2b3592 ""
   "figures/agh_logo.eps" 1767290174 321804 86a60c0c15e566a2184d121886c8377d ""
-  "ju_cse_report.sty" 1767290174 5212 de763a0d3c3ebe254ef052e96247b50b ""
+  "ju_cse_report.sty" 1767455607 4945 9d456b377a9dcc02b1e06376ba334458 ""
   "pages/abbr.tex" 1767290174 309 145d1763b45beb6895ecda244b0f438d ""
-  "pages/abstract.tex" 1767290174 1333 1eb0b004e44acdca6437147483fbcd4b ""
   "pages/bibliography.tex" 1767297751 1072 1662ecc844c8dd5a81fa1416e0e3aa36 ""
   "parameters/ReportNumber.txt" 1767291361 37 7e7b79ce4d63d4be10acae61887b299d ""
   "parameters/ReportSubmissionDate.txt" 1767291560 17 897aa0e8e31402f41df67d87b1b02928 ""
@@ -240,14 +240,14 @@
   "parameters/StudentName.txt" 1767291494 51 07c0d1a59f03f6b3400523d10db8915c ""
   "parameters/course.txt" 1767291584 77 d9bbb1e344c92f05ac8e6101326d5397 ""
   "parameters/supervisor.txt" 1767291534 34 8bf7e0c25e2ea00a6f3a5036a4e27625 ""
-  "report.aux" 1767447671 10344 7f3928f4877d7783560deb736862eeb9 "pdflatex"
-  "report.bbl" 1767445978 877 628a2a8c68e066122d1514411e0b8455 "bibtex report"
+  "report.aux" 1767455738 10637 5ac128b7df98bd184d3eb978a22f36a0 "pdflatex"
+  "report.bbl" 1767455628 877 628a2a8c68e066122d1514411e0b8455 "bibtex report"
   "report.gls" 0 -1 0 ""
-  "report.glsdefs" 1767447671 1729 4e9bf7d39905b80562f6913ead1ab1f0 "pdflatex"
-  "report.ind" 1767447671 0 d41d8cd98f00b204e9800998ecf8427e "makeindex report.idx"
-  "report.out" 1767447671 8172 6bfc12df18b9c4fb74d31f58204f11e1 "pdflatex"
+  "report.glsdefs" 1767455738 1729 4e9bf7d39905b80562f6913ead1ab1f0 "pdflatex"
+  "report.ind" 1767455738 0 d41d8cd98f00b204e9800998ecf8427e "makeindex report.idx"
+  "report.out" 1767455738 8088 123155797ddb3cf5a4c2e1cc058e5fd6 "pdflatex"
   "report.tex" 1767299316 2687 ce3e655e0470cd23d56b4d52ce496536 ""
-  "report.toc" 1767447671 3882 80957d33f77eb67b6c6a7cdd2572f19d "pdflatex"
+  "report.toc" 1767455738 3825 6d93ecb0d69788145924134bde4c9c56 "pdflatex"
   (generated)
   "report.aux"
   "report.glo"
