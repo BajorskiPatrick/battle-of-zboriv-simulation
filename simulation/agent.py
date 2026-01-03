@@ -204,6 +204,43 @@ class MilitaryAgent(mesa.Agent):
             morale_loss *= 0.7
         self.morale = max(0, self.morale - morale_loss)
 
+        if self.hp <= 0:
+            self.trigger_death_panic()
+
+    def trigger_death_panic(self):
+        neighbors = self.model.grid.get_neighbors(
+            self.pos, moore=True, include_center=False, radius=3
+        )
+        for neighbor in neighbors:
+            if (
+                isinstance(neighbor, MilitaryAgent)
+                and neighbor.faction == self.faction
+                and neighbor.state != "FLEEING"
+                and neighbor.hp > 0
+            ):
+                panic_damage = 20
+                resistance = neighbor.discipline / 5
+                actual_panic = max(0, panic_damage - resistance)
+
+                neighbor.morale = max(0, neighbor.morale - actual_panic)
+
+    def trigger_chain_panic(self):
+        neighbors = self.model.grid.get_neighbors(
+            self.pos, moore=True, include_center=False, radius=3
+        )
+        for neighbor in neighbors:
+            if (
+                isinstance(neighbor, MilitaryAgent)
+                and neighbor.faction == self.faction
+                and neighbor.state != "FLEEING"
+                and neighbor.hp > 0
+            ):
+                panic_damage = 10
+                resistance = neighbor.discipline / 5
+                actual_panic = max(0, panic_damage - resistance)
+
+                neighbor.morale = max(0, neighbor.morale - actual_panic)
+
     def manage_fleeing(self):
         current_pos = self.get_pos_tuple()
 
@@ -324,6 +361,7 @@ class MilitaryAgent(mesa.Agent):
         if self.morale < panic_threshold and self.state != "FLEEING":
             if self.random.randint(0, 100) > self.discipline:
                 self.state = "FLEEING"
+                self.trigger_chain_panic()
                 self.manage_fleeing()
 
         if self.state == "FLEEING":
