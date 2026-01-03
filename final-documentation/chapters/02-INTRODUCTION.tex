@@ -1,0 +1,18 @@
+\chapter{CHARAKTERYSTYKA PROBLEMU}\label{intro}
+
+\section{Tło historyczne i teoretyczne}
+
+Bitwa pod Zborowem była jednym z kluczowych starć powstania Chmielnickiego. Charakteryzowała się znaczną dysproporcją sił oraz kluczowym znaczeniem terenu (rzeka Strypa, przeprawy mostowe) i fortyfikacji polowych. Modelowanie takich zjawisk wymaga podejścia, które uwzględnia nie tylko liczebność wojsk, ale przede wszystkim ich interakcje lokalne i psychologię pola walki.
+
+\section{Przegląd literatury}
+
+W literaturze przedmiotu dotyczącej symulacji wojskowych dominuje podejście oparte na równaniach różniczkowych (modele Lancastera), które jednak słabo radzą sobie z niejednorodnością jednostek i terenem. Dlatego w niniejszym projekcie wybrano podejście symulacji agentowej (ABM).
+
+Podstawę merytoryczną dla parametrów jednostek oraz mapy taktycznej stanowiły opracowania historyczne zgromadzone w dokumentacji projektu:
+\begin{enumerate}
+    \item \textit{Architectural Studies} – analiza topografii i fortyfikacji Zborowa, co pozwoliło na wierne odwzorowanie mapy kosztów ruchu.
+    \item \textit{Bitwa pod Zborowem 15-16 sierpnia} – szczegółowy opis przebiegu starcia, wykorzystany do definicji scenariuszy i rozmieszczenia początkowego wojsk.
+    \item \textit{Tatars, Cossacks and the Polish Army} – źródło danych na temat uzbrojenia, taktyki i morale poszczególnych formacji (np. różnice między jazdą tatarską a husarią).
+\end{enumerate}
+
+Zastosowanie podejścia agentowego pozwala na emergencję zachowań globalnych (np. oskrzydlenie, ucieczka armii) z prostych reguł definiowanych na poziomie pojedynczego oddziału.

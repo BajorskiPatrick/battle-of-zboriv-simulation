@@ -1,0 +1,2 @@
+Kod kursu: 120-ISI-1S-777\\
+Przedmiot: Symulacja systemów dyskretnych (SSD)
