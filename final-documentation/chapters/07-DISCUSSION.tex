@@ -1,0 +1,39 @@
+\chapter{DYSKUSJA WYNIKÓW} \label{ch:discussion}
+
+\section{Interpretacja wpływu pogody na wynik bitwy}
+
+Uzyskane wyniki jednoznacznie wskazują, że czynnik pogodowy w modelu nie jest jedynie "kosmetycznym" dodatkiem, ale zmienną fundamentalnie redefiniującą balans sił.
+
+\begin{enumerate}
+    \item \textbf{Dylemat Mgła vs Deszcz:} Co ciekawe, wyniki pokazują, że mgła jest znacznie groźniejsza dla Armii Koronnej (80\% porażek) niż deszcz (50\% porażek).
+    \begin{itemize}
+        \item Deszcz nakłada kary do mobilności (Speed -3 dla kawalerii) i obrażeń dystansowych (mnożnik 0.3), co spowalnia grę, ale nadal pozwala na prowadzenie walki dystansowej, choć mniej efektywnej.
+        \item Mgła drastycznie ogranicza \textit{Field of View} (pole widzenia) z 20 do 6 pól. Dla jednostek AI oznacza to, że artyleria i strzelcy nie "widzą" celu, dopóki ten nie znajdzie się w bezpośrednim sąsiedztwie. Pozwala to Kozakom na bezkarne podejście do wałów i narzucenie walki w zwarciu, w której ich przewaga liczebna jest decydująca.
+    \end{itemize}
+
+    \item \textbf{Stabilność w warunkach idealnych:} 100\% wskaźnik zwycięstw w pogodzie słonecznej sugeruje, że przy dobrej widoczności parametry jednostek koronnych (zasięg, obrażenia) są wystarczające, by zniwelować przewagę liczebną wroga. Jest to zgodne z historyczną doktryną "ognia i żelaza", gdzie siła ognia miała łamać morale wroga przed zwarciem.
+\end{enumerate}
+
+\section{Analiza jednostek w świetle eksperymentów}
+
+Eksperymenty syntetyczne rzuciły nowe światło na balans poszczególnych klas agentów:
+
+\subsection{Fenomen Dragonii}
+W eksperymencie mobilności Dragoni pokonali dwukrotnie liczniejszą Jazdę Tatarską w 90\% przypadków. Wskazuje to, że w modelu Dragonia jest jedną z najbardziej opłacalnych jednostek (cost-effective). Ich zdolność do przetrwania zmasowanego ataku lekkiej kawalerii wynika z wysokich parametrów defensywnych (HP 100, Obrona 4) w porównaniu do kruchej Jazdy Tatarskiej (HP 85, Obrona 1).
+
+\subsection{Mit Husarii potwierdzony}
+Wynik 95\% zwycięstw w starciu 5 Husarzy na 40 Czerni pokazuje, że model poprawnie symuluje efekt "shock cavalry". Czerń, jako jednostka o niskich statystykach (Melee Damage 20), zadaje obrażenia, które są skutecznie redukowane przez pancerz Husarii (Obrona 8). Z kolei Husaria zadaje 100 pkt obrażeń, co przy 70 HP Czerni oznacza eliminację przeciwnika jednym uderzeniem (one-shot). Oznacza to, że dla gracza (dowódcy) inwestycja w drogich, elitarnych agentów jest bardziej opłacalna niż rekrutacja masowa słabych jednostek.
+
+\subsection{Krytyczna masa piechoty}
+W starciu ogniowym (Piechota Niemiecka vs Kozacka) jakość przegrała z ilością (wynik 4:16). Oznacza to, że w czystej wymianie ognia w modelu, po przekroczeniu pewnego progu liczebnego, nawet wyższa dyscyplina (Niemcy: 95) nie rekompensuje mniejszej liczby luf (Kozacy). Co więcej, Piechota Kozacka w modelu posiada minimalnie wyższy współczynnik szybkostrzelności (1.4 vs 1.3), co przy przewadze liczebnej przesądziło o wyniku. Jest to istotna obserwacja taktyczna – piechota zaciężna wymaga wsparcia innych formacji, by być efektywną.
+
+\section{Ograniczenia modelu i anomalie}
+
+Mimo spójnych wyników, zauważono pewne ograniczenia symulacji:
+\begin{itemize}
+    \item \textbf{Brak wpływu morale w eksperymencie jakość/ilość:} Mimo że Husaria wygrywała, walki trwały stosunkowo długo (średnio ok. 200-300 kroków). W rzeczywistości szarża Husarii na Czerń często kończyła się natychmiastową paniką tej drugiej. Model kładzie większy nacisk na eliminację punktów życia (HP) niż na psychologię tłumu.
+    \item \textbf{Skalowanie mgły:} 20\% zwycięstw Korony we mgle może wydawać się historycznie zbyt niskie, biorąc pod uwagę, że obrońcy wałów znali przedpole. Model traktuje mgłę jako "absolutną ślepotę" dla AI, nie uwzględniając strzelania w strefy (area denial) bez widocznego celu.
+\end{itemize}
+
+\section{Podsumowanie}
+Symulacja wykazała, że warunki pogodowe są kluczowym czynnikiem determinującym wynik Bitwy pod Zborowem. Model poprawnie odwzorował relacje sił: dominację technologiczną Korony w dobrych warunkach oraz przewagę masy Kozackiej w warunkach ograniczonej widoczności.

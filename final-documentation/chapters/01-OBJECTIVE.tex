@@ -1,0 +1,26 @@
+\chapter{CEL I ZAKRES PROJEKTU}\label{obj}
+
+\section{Cel projektu}
+
+Celem głównym projektu jest opracowanie i implementacja symulacji agentowej (ABM -- Agent-Based Modeling) historycznej Bitwy pod Zborowem, która miała miejsce w 1649 roku. Projekt ma na celu zbadanie wpływu czynników stochastycznych (morale, panika) oraz środowiskowych (ukształtowanie terenu, warunki atmosferyczne) na wynik starcia pomiędzy Armią Koronną a wojskami Kozacko-Tatarskimi.
+
+Problem naukowy, jaki projekt próbuje rozwiązać, dotyczy weryfikacji, w jakim stopniu zmiana parametrów początkowych (takich jak pogoda lub dyscyplina oddziałów) mogła wpłynąć na zmianę historycznego rezultatu bitwy, przy zachowaniu wierności historycznej charakterystyk jednostek.
+
+Cele szczegółowe obejmują:
+\begin{enumerate}
+    \item Opracowanie modelu formalnego zachowań jednostek wojskowych XVII wieku (husaria, piechota, artyleria) z uwzględnieniem ich parametrów bojowych.
+    \item Implementację algorytmów decyzyjnych agentów, w tym mechaniki morale, paniki oraz wyszukiwania ścieżki (pathfinding) w środowisku dyskretnym.
+    \item Stworzenie interaktywnego środowiska wizualizacyjnego pozwalającego na obserwację przebiegu bitwy w czasie rzeczywistym oraz analizę post-hoc (mapy ciepła).
+    \item Przeprowadzenie eksperymentów symulacyjnych dla różnych scenariuszy pogodowych (deszcz, mgła, pogoda słoneczna).
+\end{enumerate}
+
+\section{Oczekiwane rezultaty}
+
+Finalnym rezultatem projektu jest aplikacja symulacyjna działająca w architekturze klient-serwer, napisana w języku Python z wykorzystaniem biblioteki Mesa oraz frameworka Flask.
+
+Oczekiwane cechy rozwiązania:
+\begin{itemize}
+    \item \textbf{Ilościowe:} System obsłuży symulację z udziałem kilkudziesięciu niezależnych agentów reprezentujących oddziały, na mapie o wymiarach odwzorowujących pole bitwy, z krokiem czasowym (turą) odpowiadającym jednostce czasu rzeczywistego.
+    \item \textbf{Jakościowe:} Model uwzględni nieliniowe efekty walki, takie jak załamanie morale prowadzące do łańcuchowej paniki oraz wpływ terenu (błoto, rzeka) na mobilność wojsk.
+    \item \textbf{Funkcjonalne:} Użytkownik będzie miał możliwość wyboru scenariusza początkowego, podglądu statystyk w czasie rzeczywistym oraz analizy historycznej bitew.
+\end{itemize}

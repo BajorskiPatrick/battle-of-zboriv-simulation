@@ -1,0 +1,71 @@
+\chapter{REZULTATY SYMULACJI} \label{ch:experimental_result}
+
+Przeprowadzono serię eksperymentów symulacyjnych mających na celu zbadanie wpływu warunków pogodowych na wynik starcia oraz weryfikację parametrów bojowych poszczególnych jednostek w izolowanych środowiskach.
+
+Zgodnie z przyjętą metodologią, dla każdego scenariusza głównego oraz eksperymentu syntetycznego wykonano po 20 powtórzeń symulacji, co pozwoliło na zebranie statystycznie istotnych próbek danych.
+
+\section{Wpływ warunków pogodowych (Scenariusz 2: Obrona Wałów)}
+
+Analiza wyników dla Scenariusza 2 wykazała drastyczny wpływ zmiennych środowiskowych na efektywność Armii Koronnej, która w dużej mierze polega na przewadze technologicznej (broń palna, artyleria).
+
+\subsection{Pogoda słoneczna (Warunki bazowe)}
+W warunkach idealnych (\texttt{weather="clear"}), Armia Koronna osiągnęła absolutną dominację. Na 20 przeprowadzonych symulacji, strona koronna zwyciężyła we wszystkich 20 przypadkach (100\% skuteczności).
+\begin{itemize}
+    \item Średnia liczba ocalałych agentów koronnych wynosiła ok. 3-4 jednostki.
+    \item Siły kozackie były zazwyczaj eliminowane zanim doszło do walki w zwarciu na pełną skalę, co potwierdza kluczową rolę zasięgu widzenia i celności broni palnej.
+\end{itemize}
+
+\subsection{Ulewny deszcz}
+Włączenie modyfikatora \texttt{weather="rain"} doprowadziło do wyrównania szans. W 20 symulacjach odnotowano idealny podział wyników:
+\begin{itemize}
+    \item \textbf{10 zwycięstw Armii Koronnej} (50\%)
+    \item \textbf{10 zwycięstw Kozaków/Tatarów} (50\%)
+\end{itemize}
+Deszcz, poprzez redukcję mobilności i karę do obrażeń dystansowych, pozwolił siłom kozackim na częstsze doprowadzanie do walki wręcz, niwelując przewagę ogniową obrońców.
+
+\subsection{Gęsta mgła}
+Scenariusz z mgłą (\texttt{weather="fog"}) okazał się najtrudniejszy dla strony koronnej. Ograniczenie zasięgu widzenia (Line of Sight) uniemożliwiło efektywne wykorzystanie artylerii i muszkieterów na dystans.
+\begin{itemize}
+    \item \textbf{Armia Koronna zwyciężyła tylko 4 razy} (20\%).
+    \item \textbf{Kozacy/Tatarzy zwyciężyli aż 16 razy} (80\%).
+\end{itemize}
+Jest to odwrócenie trendu z pogody słonecznej, wskazujące, że w modelu widoczność jest parametrem krytycznym dla armii opartej na sile ognia.
+
+\begin{table}[!ht]
+    \caption{\label{tab:weather_results} Zestawienie wyników Scenariusza 2 w zależności od pogody (na 20 prób).}
+    \centering
+    \begin{tabular}{l c c c}
+     \toprule
+    \textbf{Warunki} & \textbf{Zwycięstwa Korony} & \textbf{Zwycięstwa Kozaków} & \textbf{Dominacja} \\
+    \cmidrule{1-4}
+    Słonecznie & 20 (100\%) & 0 (0\%) & Całkowita (Korona) \\
+    Deszcz & 10 (50\%) & 10 (50\%) & Brak (Równowaga) \\
+    Mgła & 4 (20\%) & 16 (80\%) & Znaczna (Kozacy) \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Eksperymenty syntetyczne}
+
+W celu głębszego zrozumienia mechaniki starć, przeprowadzono trzy izolowane eksperymenty.
+
+\subsection{Eksperyment: Siła Ognia (Firepower)}
+Symulacja starcia Piechoty Kozackiej (15 jednostek) przeciwko Piechocie Niemieckiej (10 jednostek).
+\begin{itemize}
+    \item \textbf{Wynik:} 16 zwycięstw Kozaków (80\%) vs 4 zwycięstwa Korony (20\%).
+    \item \textbf{Wniosek:} Mimo wyższej dyscypliny Piechoty Niemieckiej (95 vs 80), parametry bojowe obu jednostek są zbliżone (Niemcy: HP 110, Rate of Fire 1.3; Kozacy: HP 115, Rate of Fire 1.4). Przewaga liczebna (15 do 10) po stronie kozackiej, w połączeniu z nieco wyższą szybkostrzelnością, okazała się decydująca w wymianie ogniowej.
+\end{itemize}
+
+\subsection{Eksperyment: Mobilność (Mobility)}
+Symulacja szarży Jazdy Tatarskiej (20 jednostek) na pozycje Dragonii (10 jednostek).
+\begin{itemize}
+    \item \textbf{Wynik:} 18 zwycięstw Dragonii (90\%) vs 2 zwycięstwa Tatarów (10\%).
+    \item \textbf{Wniosek:} Dragonia, jako jednostka hybrydowa, wykazała się niezwykłą skutecznością. Kluczowa okazała się różnica w wytrzymałości i pancerzu: Dragonia posiada \textbf{100 HP i Obronę 4}, podczas gdy Tatarzy mają tylko \textbf{85 HP i Obronę 1}. Pozwoliło to Dragonom przetrwać ostrzał i wygrać starcie mimo dwukrotnej przewagi liczebnej wroga.
+\end{itemize}
+
+\subsection{Eksperyment: Jakość vs Ilość (Quality vs Quantity)}
+Test legendy Husarii: 5 jednostek Husarii przeciwko 40 jednostkom Czerni (stosunek 1:8).
+\begin{itemize}
+    \item \textbf{Wynik:} 19 zwycięstw Husarii (95\%) vs 1 zwycięstwo Czerni (5\%).
+    \item \textbf{Wniosek:} Jest to najbardziej jednostronny wynik. Wynika on z dysproporcji statystyk: Husaria zadaje \textbf{100 pkt obrażeń} (natychmiastowa eliminacja Czerni mającej 70 HP), podczas gdy Czerń zadaje tylko 20 pkt obrażeń, dodatkowo redukowanych przez wysoką Obronę Husarii (8). Potwierdza to, że jednostki elitarne są w stanie pokonać nawet ośmiokrotnie liczniejszego, ale słabego przeciwnika.
+\end{itemize}

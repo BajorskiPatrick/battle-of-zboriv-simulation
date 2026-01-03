@@ -1,0 +1,100 @@
+\chapter{MODEL FORMALNY} \label{ch:procedure}
+
+\section{Szczegółowy model zachowania agenta}
+
+Logika decyzyjna każdego agenta (\textit{MilitaryAgent}) jest wykonywana w każdej turze symulacji. Proces ten jest deterministyczno-stochastyczny: reguły są stałe, ale ich wynik zależy od rzutów prawdopodobieństwa (np. test morale, szansa na trafienie).
+
+Poniżej przedstawiono kompletny algorytm cyklu życia agenta (Algorytm \ref{alg:main_loop}) oraz dedykowaną procedurę obsługi ucieczki (Algorytm \ref{alg:fleeing}), która różnicuje zachowanie w zależności od przynależności frakcyjnej.
+
+\begin{algorithm}[H]
+\caption{\small{\texttt{Główna pętla decyzyjna agenta (Step)}}
+\label{alg:main_loop}}
+\begin{algorithmic}[1]
+\REQUIRE Agent $A$, Grid $G$, Weather $W$
+\IF{$A.HP \le 0$} \RETURN \ENDIF
+\STATE Zmniejsz $A.fire\_cooldown$ jeśli $> 0$
+\STATE $PanicThreshold \gets 25 - (A.Discipline / 5)$
+\IF{$A.Morale < PanicThreshold$ \AND $A.State \neq FLEEING$}
+    \IF{$Random(0, 100) > A.Discipline$}
+        \STATE $A.State \gets FLEEING$
+        \STATE \textbf{Call} \textsc{ManageFleeing}($A$)
+    \ENDIF
+\ENDIF
+
+\IF{$A.State == FLEEING$}
+    \IF{brak ścieżki \AND Frakcja == "Armia Koronna"}
+        \STATE \textbf{Call} \textsc{ManageFleeing}($A$) \COMMENT{Przelicz cel ucieczki}
+    \ENDIF
+    \STATE \textbf{Call} \textsc{Move}($A$)
+    \RETURN
+\ENDIF
+
+\STATE $Enemy \gets$ \textsc{FindEnemy}($A$, radius=$W.visibility$)
+
+\IF{$Enemy$ istnieje}
+    \STATE $Dist \gets$ \textsc{Distance}($A$, $Enemy$)
+    \IF{$1 < Dist \le A.Range$ \AND $A.RangedDmg > 0$}
+        \STATE $Misfire \gets 0.4$ jeśli $W == Rain$ wpp. $0.0$
+        \IF{$A.Ammo > 0$}
+            \IF{$A.Cooldown \le 0$ \AND $Random() > Misfire$}
+                \STATE $A.State \gets ATTACKING$
+                \STATE $A.Ammo \gets A.Ammo - 1$
+                \STATE \textsc{DealDamage}($Enemy$, $A.RangedDmg$, TerrainModifier)
+            \ENDIF
+        \ELSE
+             \STATE \textsc{PathTo}($Enemy$) \COMMENT{Brak amunicji, szarża}
+             \STATE \textsc{Move}($A$)
+        \ENDIF
+    \ELSIF{$Dist \le 1.5$}
+        \STATE $A.State \gets ATTACKING$
+        \STATE \textsc{DealDamage}($Enemy$, $A.MeleeDmg$) \COMMENT{Walka wręcz}
+    \ELSE
+        \STATE \textsc{PathTo}($Enemy$)
+        \STATE \textsc{Move}($A$)
+    \ENDIF
+\ELSE
+    \STATE $A.State \gets MOVING\_TO\_STRATEGIC$
+    \STATE \textsc{PathTo}($A.StrategicTarget$)
+    \STATE \textsc{Move}($A$)
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+\section{Algorytm ucieczki i regeneracji}
+
+Unikalnym elementem modelu jest zróżnicowana strategia ucieczki. Jednostki Kozackie zawsze uciekają do krawędzi mapy. Jednostki Koronne podejmują decyzję: jeśli Obóz (Centrum Leczenia) jest bliżej niż krawędź mapy i posiada wolne miejsca, agent spróbuje się tam schronić, aby zregenerować siły (HP i Morale).
+
+\begin{algorithm}[H]
+\caption{\small{\texttt{Procedura wyznaczania celu ucieczki (Manage Fleeing)}}
+\label{alg:fleeing}}
+\begin{algorithmic}[1]
+\REQUIRE Agent $A$, Grid $G$
+\STATE $CurrentPos \gets A.Position$
+\STATE $DistToEdge \gets$ minimum dystansu do krawędzi (L, R, T, B)
+
+\IF{$A.Faction ==$ "Armia Koronna"}
+    \STATE $TargetCenter \gets$ Najbliższe \textbf{niezapełnione} Centrum Leczenia
+    \STATE $ShouldFleeToEdge \gets True$
+    
+    \IF{$TargetCenter$ istnieje}
+        \STATE $DistToCenter \gets$ \textsc{Distance}($CurrentPos$, $TargetCenter$)
+        \IF{$DistToCenter \le 2 \times DistToEdge$}
+            \STATE $ShouldFleeToEdge \gets False$
+        \ENDIF
+    \ENDIF
+    
+    \IF{NOT $ShouldFleeToEdge$}
+        \STATE $Entrance \gets$ \textsc{GetEntrance}($TargetCenter$)
+        \IF{$CurrentPos$ na $Entrance$}
+            \STATE Wejdź głębiej w strefę leczenia
+        \ELSE
+            \STATE \textsc{CalculatePath}($Entrance$)
+        \ENDIF
+    \ELSE
+        \STATE \textsc{CalculatePath}(Najbliższa Krawędź Mapy)
+    \ENDIF
+\ELSE
+    \STATE \textsc{CalculatePath}(Najbliższa Krawędź Mapy)
+\ENDIF
+\end{algorithmic}
+\end{algorithm}

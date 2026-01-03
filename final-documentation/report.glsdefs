@@ -1,0 +1,112 @@
+\glsdefs@newdocentry{ai}%
+{%
+name={AI},%
+sort={AI},%
+type={main},%
+first={AI},%
+firstplural={AIs},%
+text={AI},%
+plural={AIs},%
+description={Artificial Intelligence},%
+descriptionplural={Artificial Intelligence},%
+symbol={\relax },%
+symbolplural={\relax },%
+user1={},%
+user2={},%
+user3={},%
+user4={},%
+user5={},%
+user6={},%
+long={},%
+longplural={},%
+short={},%
+shortplural={},%
+counter={page},%
+parent={},%
+%
+}%
+
+\glsdefs@newdocentry{ann}%
+{%
+name={ANN},%
+sort={ANN},%
+type={main},%
+first={ANN},%
+firstplural={ANNs},%
+text={ANN},%
+plural={ANNs},%
+description={Artificial Neural Networks},%
+descriptionplural={Artificial Neural Networks},%
+symbol={\relax },%
+symbolplural={\relax },%
+user1={},%
+user2={},%
+user3={},%
+user4={},%
+user5={},%
+user6={},%
+long={},%
+longplural={},%
+short={},%
+shortplural={},%
+counter={page},%
+parent={},%
+%
+}%
+
+\glsdefs@newdocentry{brnn}%
+{%
+name={BRNN},%
+sort={BRNN},%
+type={main},%
+first={BRNN},%
+firstplural={BRNNs},%
+text={BRNN},%
+plural={BRNNs},%
+description={Bidirectional Recurrent Neural Network},%
+descriptionplural={Bidirectional Recurrent Neural Network},%
+symbol={\relax },%
+symbolplural={\relax },%
+user1={},%
+user2={},%
+user3={},%
+user4={},%
+user5={},%
+user6={},%
+long={},%
+longplural={},%
+short={},%
+shortplural={},%
+counter={page},%
+parent={},%
+%
+}%
+
+\glsdefs@newdocentry{bptt}%
+{%
+name={BPTT},%
+sort={BPTT},%
+type={main},%
+first={BPTT},%
+firstplural={BPTTs},%
+text={BPTT},%
+plural={BPTTs},%
+description={Backpropagation Through Time},%
+descriptionplural={Backpropagation Through Time},%
+symbol={\relax },%
+symbolplural={\relax },%
+user1={},%
+user2={},%
+user3={},%
+user4={},%
+user5={},%
+user6={},%
+long={},%
+longplural={},%
+short={},%
+shortplural={},%
+counter={page},%
+parent={},%
+%
+}%
+

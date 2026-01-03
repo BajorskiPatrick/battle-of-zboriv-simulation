@@ -1,0 +1,106 @@
+\chapter{REALIZACJA PRAKTYCZNA}
+\label{ch:eqp_used}
+
+\section{Założenia projektowe}
+W procesie realizacji systemu symulacji Bitwy pod Zborowem przyjęto następujące założenia projektowe, wynikające ze specyfiki modelowania agentowego oraz wymagań funkcjonalnych:
+
+\begin{itemize}
+    \item \textbf{Architektura Klient-Serwer:} Rozdzielenie logiki symulacyjnej (Backend w języku Python) od warstwy prezentacji (Frontend w przeglądarce internetowej). Pozwala to na przeniesienie ciężaru obliczeń na serwer i łatwe zarządzanie stanem symulacji.
+    \item \textbf{Dyskretna czasoprzestrzeń:} Model operuje na dyskretnej siatce (grid) odwzorowującej teren oraz w dyskretnych krokach czasowych (turach), gdzie jedna tura odpowiada ustalonej jednostce czasu rzeczywistego.
+    \item \textbf{Autonomia agentów:} Każda jednostka wojskowa (agent) jest niezależnym bytem posiadającym własny stan (HP, morale, cel) i podejmującym decyzje na podstawie lokalnej percepcji środowiska (zasięg wzroku), bez centralnego sterowania.
+    \item \textbf{Determinizm mapy:} Środowisko (teren, rzeki, przeszkody) jest statyczne i wczytywane z zewnętrznego pliku w formacie TMX, co gwarantuje powtarzalność warunków początkowych eksperymentów dla różnych scenariuszy.
+    \item \textbf{Modułowość:} Struktura kodu (klasy \texttt{Model} i \texttt{Agent}) umożliwia łatwe dodawanie nowych typów jednostek poprzez konfigurację parametrów w słownikach, bez konieczności ingerencji w główną pętlę symulacyjną.
+\end{itemize}
+
+\section{Komponenty sprzętowe}
+Symulacja nie wymaga specjalistycznego sprzętu serwerowego i może być uruchamiana na standardowych komputerach osobistych. Poniżej przedstawiono konfigurację sprzętową, na której weryfikowano działanie rozwiązania:
+
+\begin{itemize}
+    \item \textbf{Procesor (CPU):} Zalecany procesor wielordzeniowy (np. Intel Core i5/i7 lub AMD Ryzen 5) o taktowaniu min. 2.5 GHz. Mimo że biblioteka Mesa działa w głównym wątku, dodatkowe rdzenie wspierają obsługę serwera Flask i procesy systemowe.
+    \item \textbf{Pamięć RAM:} Minimum 8 GB. Ze względu na przechowywanie obiektowej reprezentacji każdego agenta oraz macierzy kosztów terenu dla algorytmów ścieżki (pathfinding), zalecane jest 16 GB RAM dla zapewnienia płynności przy dużej liczbie jednostek (>100).
+    \item \textbf{Karta graficzna (GPU):} Dowolna karta graficzna wspierająca standardy webowe (WebGL/Canvas API). Renderowanie wizualizacji odbywa się po stronie klienta (przeglądarki internetowej).
+\end{itemize}
+
+\section{Oprogramowanie}
+Projekt został zrealizowany w oparciu o otwarte oprogramowanie (Open Source) i biblioteki dostępne w ekosystemie języka Python.
+
+\subsection{Język programowania i środowisko}
+\begin{itemize}
+    \item \textbf{Język:} Python w wersji 3.10 lub nowszej.
+    \item \textbf{System operacyjny:} Windows 10/11, Linux (Ubuntu 22.04 LTS) lub macOS.
+\end{itemize}
+
+\subsection{Wykorzystane biblioteki (Backend)}
+Kluczowe zależności projektu zdefiniowane w pliku \texttt{pyproject.toml} / \texttt{requirements.txt}:
+\begin{itemize}
+    \item \textbf{Mesa (2.1.2):} Podstawowy framework do modelowania agentowego (ABM). Dostarcza kluczowe abstrakcje takie jak \texttt{Model}, \texttt{Agent}, \texttt{MultiGrid} (siatka wielowarstwowa) oraz \texttt{RandomActivation} (harmonogramowanie).
+    \item \textbf{Flask (3.0.0):} Mikro-framework webowy służący do udostępniania interfejsu użytkownika oraz API, przez które frontend komunikuje się z modelem symulacyjnym (przesyłanie stanu gry JSON).
+    \item \textbf{NumPy (1.24.0):} Biblioteka do obliczeń numerycznych, wykorzystywana do operacji na macierzach reprezentujących mapę kosztów terenu oraz do generowania analitycznych map ciepła (heatmap).
+    \item \textbf{Pathfinding (1.0.4):} Implementacja algorytmu A* (A-Star), służąca do znajdowania optymalnych ścieżek ruchu dla agentów w złożonym terenie z uwzględnieniem kosztów ruchu.
+    \item \textbf{PyTMX (3.31):} Biblioteka do parsowania i obsługi plików map stworzonych w programie Tiled Map Editor (.tmx).
+\end{itemize}
+
+\subsection{Technologie webowe (Frontend)}
+\begin{itemize}
+    \item \textbf{HTML5 \& CSS3:} Struktura i stylizacja panelu sterowania (Dashboard).
+    \item \textbf{JavaScript (ES6+):} Logika klienta, obsługa asynchronicznych zapytań do serwera (Fetch API) oraz sterowanie renderowaniem.
+    \item \textbf{Canvas API:} Wykorzystywane do rysowania mapy kafelkowej i sprite'ów agentów w wysokiej wydajności (60 FPS).
+\end{itemize}
+
+\section{Instalacja i uruchomienie}
+
+Aplikacja symulacyjna jest oprogramowaniem wieloplatformowym i może być uruchamiana na systemach Windows, Linux oraz macOS. Do poprawnego działania wymagana jest obecność interpretera języka \textbf{Python w wersji 3.10} lub nowszej.
+
+Proces instalacji i uruchomienia przebiega następująco:
+
+\begin{enumerate}
+    \item \textbf{Instalacja zależności:}
+    Wszystkie biblioteki zewnętrzne wymagane do działania symulacji (m.in. \texttt{mesa}, \texttt{flask}, \texttt{numpy}) zostały zdefiniowane w pliku konfiguracyjnym. Zalecane jest ich instalowanie w wyizolowanym środowisku wirtualnym (virtualenv) za pomocą menedżera pakietów pip:
+    
+    \begin{verbatim}
+    pip install -r requirements.txt
+    \end{verbatim}
+    
+    \item \textbf{Uruchomienie serwera aplikacji:}
+    Głównym punktem wejścia do programu jest skrypt \texttt{app.py}, który inicjalizuje serwer Flask. Należy go uruchomić z poziomu terminala:
+    
+    \begin{verbatim}
+    python app.py
+    \end{verbatim}
+    
+    Po wykonaniu tego polecenia, w konsoli powinien pojawić się komunikat potwierdzający start serwera deweloperskiego (zazwyczaj: \textit{Running on http://127.0.0.1:5000}).
+
+    \item \textbf{Obsługa symulacji:}
+    Interfejs graficzny dostępny jest z poziomu przeglądarki internetowej. Należy wpisać w pasku adresu:
+    \begin{center}
+        \texttt{http://127.0.0.1:5000}
+    \end{center}
+\end{enumerate}
+
+Po załadowaniu strony użytkownik ma możliwość wyboru scenariusza początkowego oraz warunków pogodowych przed rozpoczęciem właściwej symulacji.
+
+\section{Szczegóły implementacji}
+
+\subsection{Struktura projektu}
+Aplikacja została podzielona na moduły zgodnie z zasadą "Separation of Concerns" (rozdziału odpowiedzialności):
+\begin{itemize}
+    \item \texttt{app.py}: Główny plik startowy aplikacji. Inicjalizuje serwer Flask i definiuje endpointy API (np. \texttt{/get\_step}, \texttt{/reset\_model}).
+    \item \texttt{simulation/model.py}: Zawiera klasę \texttt{BattleOfZborowModel} dziedziczącą po \texttt{mesa.Model}. Odpowiada za inicjalizację świata, wczytanie warstw mapy z pliku TMX i zarządzanie globalnym stanem (np. pogodą).
+    \item \texttt{simulation/agent.py}: Zawiera klasę \texttt{MilitaryAgent} dziedziczącą po \texttt{mesa.Agent}. Definiuje logikę zachowania pojedynczej jednostki, w tym maszynę stanów (\texttt{IDLE, MOVING, ATTACKING, FLEEING}).
+    \item \texttt{static/}: Katalog z zasobami statycznymi: skrypty JS, style CSS, grafiki sprite'ów (.png) oraz pliki map.
+    \item \texttt{templates/}: Pliki widoków HTML renderowane przez silnik Jinja2.
+\end{itemize}
+
+\subsection{Kluczowe algorytmy i mechanizmy}
+
+\textbf{1. Inicjalizacja i obsługa mapy:}
+
+Model wykorzystuje bibliotekę \texttt{PyTMX} do wczytania pliku \texttt{assets/map/map.tmx}. Warstwa "Teren" jest iterowana, a właściwości kafelków (takie jak \texttt{movement\_cost}) są konwertowane na macierz NumPy. Macierz ta stanowi podstawę dla siatki nawigacyjnej biblioteki \texttt{pathfinding}, gdzie wartości >1 oznaczają teren trudny (las, wzgórza), a wartości bardzo wysokie – przeszkody nie do przebycia.
+
+\textbf{2. System nawigacji i unikania kolizji:}
+
+Każdy agent, chcąc przemieścić się do celu (wroga lub punktu strategicznego), wywołuje metodę \texttt{calculate\_path()}. Algorytm A* wyznacza listę współrzędnych (węzłów). Aby uniknąć nakładania się jednostek, zaimplementowano mechanizm dynamicznego blokowania węzłów zajętych przez inne żywe jednostki na czas wyznaczania ścieżki. Jeśli agent napotka zator, aktywuje licznik \texttt{repath\_timer}, czekając losową liczbę tur przed ponowną próbą znalezienia drogi, co redukuje obciążenie procesora.
+
+\textbf{3. Pętla symulacyjna i wizualizacja:}
+
+Symulacja działa w trybie krokowym. Frontend wysyła żądanie HTTP GET na endpoint \texttt{/update}. W odpowiedzi serwer wykonuje metodę \texttt{model.step()}, która iteruje po wszystkich agentach, a następnie zwraca zserializowany obiekt JSON zawierający pozycje, typy i stan (HP, morale) wszystkich jednostek. Frontend czyści element \texttt{<canvas>} i przerysowuje scenę, co pozwala na płynną animację przebiegu bitwy.
