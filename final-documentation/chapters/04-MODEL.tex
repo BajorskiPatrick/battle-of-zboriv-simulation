@@ -4,7 +4,13 @@
 
 Logika decyzyjna każdego agenta (\textit{MilitaryAgent}) jest wykonywana w każdej turze symulacji. Proces ten jest deterministyczno-stochastyczny: reguły są stałe, ale ich wynik zależy od rzutów prawdopodobieństwa (np. test morale, szansa na trafienie).
 
-Poniżej przedstawiono kompletny algorytm cyklu życia agenta (Algorytm \ref{alg:main_loop}) oraz dedykowaną procedurę obsługi ucieczki (Algorytm \ref{alg:fleeing}), która różnicuje zachowanie w zależności od przynależności frakcyjnej.
+W modelu zaimplementowano zaawansowane mechanizmy psychologii tłumu, symulujące efekt domina na polu bitwy:
+\begin{itemize}
+    \item \textbf{Panika Łańcuchowa (Chain Panic):} Gdy jednostka nie zda testu morale i rzuci się do ucieczki, wywołuje to falę strachu u pobliskich sojuszników (w promieniu 3 pól), obniżając ich morale. Siła tego efektu jest tym mniejsza, im większa jest dyscyplina obserwatorów (dla zdyscyplinowanych żołnierzy efekt ten jest zerowy).
+    \item \textbf{Panika po Śmierci (Death Panic):} Eliminacja jednostki wywołuje silny wstrząs psychiczny u towarzyszy znajdujących się w bezpośrednim sąsiedztwie, co może prowadzić do załamania całej formacji, nawet jeśli nie była ona bezpośrednio atakowana. Siła tego efektu zależy od dyscypliny analogicznie, jak w przypadku Paniki Łańcuchowej.
+\end{itemize}
+
+Poniżej przedstawiono kompletny algorytm cyklu życia agenta (Algorytm \ref{alg:main_loop}), procedurę obsługi obrażeń (Algorytm \ref{alg:receive_damage}) oraz dedykowaną procedurę obsługi ucieczki (Algorytm \ref{alg:fleeing}).
 
 \begin{algorithm}[H]
 \caption{\small{\texttt{Główna pętla decyzyjna agenta (Step)}}
@@ -17,6 +23,7 @@ Poniżej przedstawiono kompletny algorytm cyklu życia agenta (Algorytm \ref{alg
 \IF{$A.Morale < PanicThreshold$ \AND $A.State \neq FLEEING$}
     \IF{$Random(0, 100) > A.Discipline$}
         \STATE $A.State \gets FLEEING$
+        \STATE \textbf{Call} \textsc{TriggerChainPanic}($A$)
         \STATE \textbf{Call} \textsc{ManageFleeing}($A$)
     \ENDIF
 \ENDIF
@@ -39,7 +46,7 @@ Poniżej przedstawiono kompletny algorytm cyklu życia agenta (Algorytm \ref{alg
             \IF{$A.Cooldown \le 0$ \AND $Random() > Misfire$}
                 \STATE $A.State \gets ATTACKING$
                 \STATE $A.Ammo \gets A.Ammo - 1$
-                \STATE \textsc{DealDamage}($Enemy$, $A.RangedDmg$, TerrainModifier)
+                \STATE \textsc{ReceiveDamage}($Enemy$, $A.RangedDmg$)
             \ENDIF
         \ELSE
              \STATE \textsc{PathTo}($Enemy$) \COMMENT{Brak amunicji, szarża}
@@ -47,7 +54,7 @@ Poniżej przedstawiono kompletny algorytm cyklu życia agenta (Algorytm \ref{alg
         \ENDIF
     \ELSIF{$Dist \le 1.5$}
         \STATE $A.State \gets ATTACKING$
-        \STATE \textsc{DealDamage}($Enemy$, $A.MeleeDmg$) \COMMENT{Walka wręcz}
+        \STATE \textsc{ReceiveDamage}($Enemy$, $A.MeleeDmg$) \COMMENT{Walka wręcz}
     \ELSE
         \STATE \textsc{PathTo}($Enemy$)
         \STATE \textsc{Move}($A$)
@@ -56,6 +63,27 @@ Poniżej przedstawiono kompletny algorytm cyklu życia agenta (Algorytm \ref{alg
     \STATE $A.State \gets MOVING\_TO\_STRATEGIC$
     \STATE \textsc{PathTo}($A.StrategicTarget$)
     \STATE \textsc{Move}($A$)
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{\small{\texttt{Procedura otrzymania obrażeń (Receive Damage)}}
+\label{alg:receive_damage}}
+\begin{algorithmic}[1]
+\REQUIRE Agent $A$, Damage $D$
+\STATE $Reduction \gets Random(0, A.Defense / 2)$
+\STATE $ActualDmg \gets \max(1, D - Reduction)$
+\STATE $A.HP \gets A.HP - ActualDmg$
+\STATE $MoraleLoss \gets ActualDmg \times 1.5$
+\IF{$A.Discipline > 80$}
+    \STATE $MoraleLoss \gets MoraleLoss \times 0.7$
+\ENDIF
+\STATE $A.Morale \gets A.Morale - MoraleLoss$
+
+\IF{$A.HP \le 0$}
+    \STATE \textbf{Call} \textsc{TriggerDeathPanic}($A$)
+    \STATE Oznacz agenta jako martwego
 \ENDIF
 \end{algorithmic}
 \end{algorithm}
