@@ -314,6 +314,45 @@ def get_scenarios():
                 },
             },
         },
+        "experiment_quality_vs_quantity": {
+            "id": "experiment_quality_vs_quantity",
+            "name": "Eksperyment: Husaria vs Czerń",
+            "description": "Test progu wytrzymałości elitarnej jazdy. 5 chorągwi Husarii przeciwko rosnącej fali Czerni (40 jednostek).",
+            "units": {
+                "Husaria": 5,
+                "Czern": 40,
+                "_deployment": {
+                    "Husaria": {"x": [100, 120], "y": [40, 60]},
+                    "Czern": {"x": [20, 60], "y": [10, 90]},
+                },
+            },
+        },
+        "experiment_firepower": {
+            "id": "experiment_firepower",
+            "name": "Eksperyment: Pojedynek Ogniowy",
+            "description": "Symetryczne starcie strzeleckie. 10 oddziałów Piechoty Niemieckiej vs 15 oddziałów Piechoty Kozackiej w otwartym polu.",
+            "units": {
+                "Piechota Niemiecka": 10,
+                "Piechota Kozacka": 15,
+                "_deployment": {
+                    "Piechota Niemiecka": {"x": [120, 130], "y": [10, 90]},
+                    "Piechota Kozacka": {"x": [30, 40], "y": [10, 90]},
+                },
+            },
+        },
+        "experiment_mobility": {
+            "id": "experiment_mobility",
+            "name": "Eksperyment: Szarża na Dragonów",
+            "description": "Czy szybka jazda tatarska (20 jednostek) zdoła dopaść i rozbić spieszoną Dragonię (10 jednostek) zanim zostanie wystrzelana?",
+            "units": {
+                "Dragonia": 10,
+                "Jazda Tatarska": 20,
+                "_deployment": {
+                    "Dragonia": {"x": [130, 140], "y": [30, 70]},
+                    "Jazda Tatarska": {"x": [20, 50], "y": [10, 90]},
+                },
+            },
+        },
     }
 
     for scenario in scenarios.values():

@@ -168,7 +168,7 @@ class BattleOfZborowModel(mesa.Model):
                 "discipline": 70,
                 "melee_damage": 30,
                 "ranged_damage": 15,
-                "range": 6,
+                "range": 4,
                 "ammo": 40,
                 "defense": 1,
                 "speed": 9,
@@ -179,7 +179,7 @@ class BattleOfZborowModel(mesa.Model):
             "Piechota Kozacka": {
                 "hp": 115,
                 "morale": 110,
-                "discipline": 90,
+                "discipline": 80,
                 "melee_damage": 35,
                 "ranged_damage": 35,
                 "range": 5,
